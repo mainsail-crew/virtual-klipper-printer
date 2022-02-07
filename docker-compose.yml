@@ -1,0 +1,17 @@
+version: "3.8"
+services:
+  printer:
+    container_name: klipper-printer-simulavr
+    build:
+      context: docker
+      dockerfile: Dockerfile
+    image: klipper-printer-simulavr
+    volumes:
+      - ./printer:/home/printer
+    ports:
+      - "7125:7125"
+    networks:
+      - dev_net
+networks:
+  dev_net:
+    driver: bridge
