@@ -24,9 +24,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libopenjp2-7 \
     libsodium-dev \
     libssl-dev \
-    python3-dev \
     python3-libgpiod \
-    python3-virtualenv \
     zlib1g-dev \
     ### libsim for simulavr
     && cd /usr/src \
