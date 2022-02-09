@@ -13,75 +13,70 @@ cd ~ || exit 1
 [ ! -d ~/klipper_logs ] && mkdir klipper_logs
 [ ! -d ~/gcode_files ] && mkdir gcode_files
 
-### setup klipper
-if [ ! -d ~/klipper ]; then
+setup_klipper(){
+    [ -d ~/klipper ] && return
     echo "##### Cloning Klipper ..."
     git clone $klipper_git --single-branch --branch ${klipper_branch}
     echo "##### Done!"
-else
-    echo "##### Klipper found! Continue ..."
-fi
+}
 
-### build klippy-env
-if [ ! -d ~/klippy-env ]; then
+build_klipper_env(){
+    [ -d ~/klippy-env ] && return
     echo "##### Building Klipper virtualenv ..."
     virtualenv -p python3 ~/klippy-env
     ~/klippy-env/bin/pip install -r ~/klipper/scripts/klippy-requirements.txt
     echo "##### Done!"
-else
-    echo "##### Klipper virtualenv found! Continue ..."
-fi
+}
 
-### setup moonraker
-if [ ! -d ~/moonraker ]; then
+setup_moonraker(){
+    [ -d ~/moonraker ] && return
     echo "##### Cloning Moonraker ..."
     git clone $moonraker_git --single-branch --branch ${moonraker_branch}
     echo "##### Done!"
-else
-    echo "##### Moonraker found! Continue ..."
-fi
+}
 
-### build moonraker-env
-if [ ! -d ~/moonraker-env ]; then
+build_moonraker_env(){
+    [ -d ~/moonraker-env ] && return
     echo "##### Building Moonraker virtualenv ..."
     virtualenv -p python3 ~/moonraker-env
     ~/moonraker-env/bin/pip install -r ~/moonraker/scripts/moonraker-requirements.txt
     echo "##### Done!"
-else
-    echo "##### Moonraker virtualenv found! Continue ..."
-fi
+}
 
-### build simulavr firmware
-if [ ! -f ~/klipper/simulavr.elf ]; then
+build_firmware(){
+    [ -f ~/simulavr.elf ] && return
     echo "##### Building Klipper firmware ..."
+    [ ! -d ~/klipper ] && setup_klipper
     cd ~/klipper || exit 1
     cp $simulavr_cfg .config && make PYTHON=python3
-    cp out/klipper.elf simulavr.elf
+    cp out/klipper.elf ~/simulavr.elf
     rm -f .config && make clean
     cd ~ || exit 1
     echo "##### Done!"
-else
-    echo "##### Klipper firmware already built! Continue ..."
-fi
+}
 
-### setup simulavr
-if [ ! -d ~/simulavr ]; then
+setup_simulavr(){
+    [ -d ~/simulavr ] && return
     echo "##### Cloning Simulavr ..."
     git clone $simulavr_git
     echo "##### Done!"
-else
-    echo "##### Simulavr found! Continue ..."
-fi
+}
 
-## build simulavr python module
-if [ ! -d ~/simulavr/build ]; then
+build_simulavr(){
+    [ -d ~/simulavr/build ] && return
     echo "##### Building Simulavr ..."
     cd ~/simulavr || exit 1
     make clean && make python && make build
     echo "##### Done!"
-else
-    echo "##### Simulavr already built! Continue ..."
-fi
+}
+
+setup_klipper
+build_klipper_env
+setup_moonraker
+build_moonraker_env
+build_firmware
+setup_simulavr
+build_simulavr
 
 sudo -S rm /bin/systemctl
 sudo -S ln -s /usr/bin/supervisorctl /bin/systemctl
