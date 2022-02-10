@@ -79,7 +79,7 @@ setup_simulavr
 build_simulavr
 
 sudo -S rm /bin/systemctl
-sudo -S ln -s /usr/bin/supervisorctl /bin/systemctl
+sudo -S ln -s /bin/service_control /bin/systemctl
 
 cd ~ && echo "Everything is ready ... Starting ..."
 /usr/bin/supervisord

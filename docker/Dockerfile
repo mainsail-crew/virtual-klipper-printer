@@ -46,6 +46,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ### copy all required files
 COPY simulavr.config /usr/src
 COPY supervisord.conf /etc/supervisor/supervisord.conf
+COPY service_control.sh /bin/service_control
 COPY start.sh /bin/start
 
 ### make entrypoint executable
