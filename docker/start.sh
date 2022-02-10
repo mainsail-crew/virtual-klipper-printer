@@ -2,9 +2,7 @@
 sudo -S ln -s /bin/true /bin/systemctl
 
 klipper_git="https://github.com/klipper3d/klipper"
-klipper_branch="master"
 moonraker_git="https://github.com/Arksine/moonraker"
-moonraker_branch="master"
 simulavr_git="https://git.savannah.nongnu.org/git/simulavr.git"
 simulavr_cfg="/usr/src/simulavr.config"
 
@@ -16,7 +14,7 @@ cd ~ || exit 1
 setup_klipper(){
     [ -d ~/klipper ] && return
     echo "##### Cloning Klipper ..."
-    git clone $klipper_git --single-branch --branch ${klipper_branch}
+    git clone $klipper_git --depth 1
     echo "##### Done!"
 }
 
@@ -31,7 +29,7 @@ build_klipper_env(){
 setup_moonraker(){
     [ -d ~/moonraker ] && return
     echo "##### Cloning Moonraker ..."
-    git clone $moonraker_git --single-branch --branch ${moonraker_branch}
+    git clone $moonraker_git --depth 1
     echo "##### Done!"
 }
 
@@ -58,7 +56,7 @@ build_firmware(){
 setup_simulavr(){
     [ -d ~/simulavr ] && return
     echo "##### Cloning Simulavr ..."
-    git clone $simulavr_git
+    git clone $simulavr_git --depth 1
     echo "##### Done!"
 }
 
