@@ -7,7 +7,7 @@ if [ "$1" = "list-units" ]; then
 fi
 
 if [ "$2" = "klipper" ]; then
-	sudo /usr/bin/supervisorctl "$1" simulavr "$2"
+    sudo /usr/bin/supervisorctl "$1" simulavr "$2"
 else
-	sudo /usr/bin/supervisorctl "$1" "$2"
+    sudo /usr/bin/supervisorctl "$1" "$2"
 fi
