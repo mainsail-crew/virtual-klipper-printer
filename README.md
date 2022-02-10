@@ -1,9 +1,9 @@
+[![Project Maintenance](https://img.shields.io/maintenance/yes/2022.svg)](https://github.com/th33xitus/klipper-printer-simulavr-docker 'GitHub Repository')
+[![License](https://img.shields.io/github/license/th33xitus/klipper-printer-simulavr-docker.svg)](https://github.com/th33xitus/klipper-printer-simulavr-docker/blob/master/LICENSE 'License')
+---
 # Klipper-Printer-Simulavr-Docker
 
-## **An approach to run a simulated Klipper 3D-Printer in a Docker container.**
-
-_Runs Klipper, Moonraker and Simulavr managed with supervisord in a docker container._
-
+### **Run a simulated Klipper 3D-Printer in a Docker container.**
 ---
 
 ## Getting started:
