@@ -15,12 +15,6 @@ cd ~ || exit 1
 [ ! -d ~/klipper_logs ] && mkdir klipper_logs
 [ ! -d ~/gcode_files ] && mkdir gcode_files
 
-download_configs(){
-    [ ! -f ~/klipper_config/printer.cfg ] && curl -O $printer_cfg
-    [ ! -f ~/klipper_config/moonraker.conf ] && curl -O $moonraker_conf
-    [ ! -f ~/klipper_config/atmega644p.cfg ] && curl -O $atmega_cfg
-}
-
 setup_klipper(){
     [ -d ~/klipper ] && return
     echo "##### Cloning Klipper ..."
@@ -77,6 +71,14 @@ build_simulavr(){
     cd ~/simulavr || exit 1
     make clean && make python && make build
     echo "##### Done!"
+}
+
+download_configs(){
+    cd ~/klipper_config || exit 1
+    [ ! -f ~/klipper_config/printer.cfg ] && curl -O $printer_cfg
+    [ ! -f ~/klipper_config/moonraker.conf ] && curl -O $moonraker_conf
+    [ ! -f ~/klipper_config/atmega644p.cfg ] && curl -O $atmega_cfg
+    cd ~ || exit 1
 }
 
 setup_klipper
