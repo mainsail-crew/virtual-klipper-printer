@@ -6,10 +6,20 @@ moonraker_git="https://github.com/Arksine/moonraker"
 simulavr_git="git://git.savannah.nongnu.org/simulavr.git"
 simulavr_cfg="/usr/src/simulavr.config"
 
+printer_cfg="https://raw.githubusercontent.com/th33xitus/klipper-printer-simulavr-docker/master/example-configs/printer.cfg"
+moonraker_conf="https://raw.githubusercontent.com/th33xitus/klipper-printer-simulavr-docker/master/example-configs/moonraker.conf"
+atmega_cfg="https://raw.githubusercontent.com/th33xitus/klipper-printer-simulavr-docker/master/example-configs/atmega644p.cfg"
+
 cd ~ || exit 1
 [ ! -d ~/klipper_config ] && mkdir klipper_config
 [ ! -d ~/klipper_logs ] && mkdir klipper_logs
 [ ! -d ~/gcode_files ] && mkdir gcode_files
+
+download_configs(){
+    [ ! -f ~/klipper_config/printer.cfg ] && curl -O $printer_cfg
+    [ ! -f ~/klipper_config/moonraker.conf ] && curl -O $moonraker_conf
+    [ ! -f ~/klipper_config/atmega644p.cfg ] && curl -O $atmega_cfg
+}
 
 setup_klipper(){
     [ -d ~/klipper ] && return
@@ -76,6 +86,7 @@ build_moonraker_env
 build_firmware
 setup_simulavr
 build_simulavr
+download_configs
 
 sudo -S rm /bin/systemctl
 sudo -S ln -s /bin/service_control /bin/systemctl
