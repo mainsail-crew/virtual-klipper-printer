@@ -3,7 +3,7 @@ sudo -S ln -s /bin/true /bin/systemctl
 
 klipper_git="https://github.com/klipper3d/klipper"
 moonraker_git="https://github.com/Arksine/moonraker"
-simulavr_git="https://git.savannah.nongnu.org/git/simulavr.git"
+simulavr_git="git://git.savannah.nongnu.org/simulavr.git"
 simulavr_cfg="/usr/src/simulavr.config"
 
 cd ~ || exit 1
@@ -56,7 +56,7 @@ build_firmware(){
 setup_simulavr(){
     [ -d ~/simulavr ] && return
     echo "##### Cloning Simulavr ..."
-    git clone $simulavr_git --depth 1
+    git clone $simulavr_git
     echo "##### Done!"
 }
 
