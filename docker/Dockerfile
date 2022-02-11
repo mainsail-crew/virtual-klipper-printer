@@ -1,7 +1,5 @@
 FROM python:3.10-slim-bullseye AS base
 
-ARG libsim="http://download.savannah.nongnu.org/releases/simulavr/libsim_1.1.0_amd64.deb"
-
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ### non specific packages
     git \
@@ -9,7 +7,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     supervisor \
     swig \
     virtualenv \
-    wget \
     ### klipper
     avr-libc \
     binutils-avr \
@@ -27,11 +24,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-dev \
     python3-libgpiod \
     zlib1g-dev \
-    ### libsim for simulavr
-    && cd /usr/src \
-    && wget ${libsim} \
-    && apt-get install -y --no-install-recommends \
-    ./libsim_1.1.0_amd64.deb \
     ### clean up
     && apt-get -y autoremove \
     && apt-get clean \
