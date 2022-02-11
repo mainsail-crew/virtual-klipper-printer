@@ -6,21 +6,26 @@
 ### **Run a simulated Klipper 3D-Printer in a Docker container.**
 ---
 
-## Getting started:
-### 🔵 Part 1:
+### Instructions:
 1. Clone this repository
 2. Open a terminal in the cloned folder
-3. Run `docker-compose up` to build the docker image and start the container
-
-### 🟢 Part 2:
-During the process a folder named `printer` will appear. Inside of that folder you will find commonly known folders like `klipper_config`, `klipper_logs` and `gcode_files`.
-
-4. Copy all configuration files from the [example-configs](example-configs) to `printer/klipper_configs`
-5. Restart the container
-6. Done
-
-Klipper, Moonraker and a simulated Atmel ATmega micro-controller now run inside of the Docker container and you can use it for whatever reason you decided to clone this repository 😄.
+3. Run `docker-compose up -d` to build the docker image and start the container afterwards
 
 ---
 
-Feel free to contribute if you find solutions to make the docker image even smaller (~ 700 MB as of now) or provide ideas to generally improve this project.
+Notes:
+* You can access the containers shell with the following command:\
+`docker exec -it <CONTAINER ID> bash`
+* You get the `<CONTAINER ID>` with the following command:\
+`docker ps`
+* Restart the container with:\
+`docker container restart <CONTAINER ID>`
+
+
+
+---
+Klipper, Moonraker and a simulated Atmel ATmega micro-controller now run inside of the Docker container and you can use it for whatever reason you decided to clone this repository 😄.
+
+The container is build in a way, that you are able to quickly "re-install" Klipper and Moonraker or can quickly re-build the python environments or the firmware if that is ever necessary. For that, simply delete the corresponding folder/file and restart the container and the required components will be "installed" again.
+
+Feel free to contribute if you find solutions to make the docker image even smaller (~ 675 MB as of now) or provide ideas to generally improve this project.
