@@ -9,11 +9,12 @@
 ### Instructions:
 1. Clone this repository
 2. Open a terminal in the cloned folder
-3. Run `docker-compose up -d` to build the docker image and start the container afterwards
+3. Run `docker-compose up -d` to build the docker image and start the container afterwards in detached mode
 
 ---
 
 Notes:
+* The first start of the container will take a moment since all components have to be downloaded and/or compiled
 * You can access the containers shell with the following command:\
 `docker exec -it <CONTAINER ID> bash`
 * You get the `<CONTAINER ID>` with the following command:\
