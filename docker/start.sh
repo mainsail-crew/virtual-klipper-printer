@@ -61,7 +61,8 @@ setup_simulavr(){
 }
 
 build_simulavr(){
-    [ -d ~/simulavr/build ] && return
+    file="${HOME}/simulavr/build/pysimulavr/_pysimulavr.*.so"
+    [ "$(ls "$file"  2> /dev/null)" ] && return
     echo "##### Building Simulavr ..."
     cd ~/simulavr || exit 1
     make clean && make python && make build
