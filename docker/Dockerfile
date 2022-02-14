@@ -27,7 +27,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ### clean up
     && apt-get -y autoremove \
     && apt-get clean \
-    && rm -f libsim_1.1.0_amd64.deb \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
     ### add user "printer"
     && groupadd --force -g 1000 printer \
