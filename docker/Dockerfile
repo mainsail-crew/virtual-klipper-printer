@@ -1,6 +1,8 @@
 FROM python:3.10-slim-bullseye AS base
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y \
+    --no-install-recommends \
+    --no-install-suggests \
     ### non specific packages
     git \
     sudo \
@@ -15,6 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc-avr \
     ### moonraker
     curl \
+    iproute2 \
     libcurl4-openssl-dev \
     libjpeg-dev \
     liblmdb-dev \
