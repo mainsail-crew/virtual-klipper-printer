@@ -66,6 +66,7 @@ setup_simulavr(){
 
 build_simulavr(){
     file="${HOME}/simulavr/build/pysimulavr/_pysimulavr.*.so"
+    # shellcheck disable=SC2086
     [ "$(ls $file  2> /dev/null)" ] && return
     echo "##### Building Simulavr ..."
     cd ~/simulavr || exit 1
