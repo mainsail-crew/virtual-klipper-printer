@@ -29,4 +29,4 @@ Klipper, Moonraker and a simulated Atmel ATmega micro-controller now run inside 
 
 The container is build in a way, that you are able to quickly "re-install" Klipper and Moonraker or can quickly re-build the python environments or the firmware if that is ever necessary. For that, simply delete the corresponding folder/file and restart the container and the required components will be "installed" again.
 
-Feel free to contribute if you find solutions to make the docker image even smaller (~ 675 MB as of now) or provide ideas to generally improve this project.
+Feel free to contribute if you find solutions to make the docker image even smaller (~ 679 MB as of now) or provide ideas to generally improve this project.
