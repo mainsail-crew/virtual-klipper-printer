@@ -82,6 +82,12 @@ download_configs(){
     cd ~ || exit 1
 }
 
+regain_ownership(){
+    sudo chown -R printer:printer ~/klipper_config
+    sudo chown -R printer:printer ~/klipper_logs
+    sudo chown -R printer:printer ~/gcode_files
+}
+
 setup_klipper
 build_klipper_env
 setup_moonraker
@@ -90,6 +96,7 @@ build_firmware
 setup_simulavr
 build_simulavr
 download_configs
+regain_ownership
 
 sudo -S rm /bin/systemctl
 sudo -S ln -s /bin/service_control /bin/systemctl
