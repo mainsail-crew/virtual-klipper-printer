@@ -1,5 +1,5 @@
 #!/bin/bash
-sudo -S ln -s /bin/true /bin/systemctl
+[ ! -e /bin/systemctl ] && sudo -S ln -s /bin/true /bin/systemctl
 
 klipper_git="https://github.com/klipper3d/klipper"
 moonraker_git="https://github.com/Arksine/moonraker"
