@@ -18,7 +18,7 @@ cd ~ || exit 1
 setup_klipper(){
     [ -d ~/klipper ] && return
     echo "##### Cloning Klipper ..."
-    git clone $klipper_git --depth 1
+    git clone $klipper_git
     echo "##### Done!"
 }
 
@@ -33,7 +33,7 @@ build_klipper_env(){
 setup_moonraker(){
     [ -d ~/moonraker ] && return
     echo "##### Cloning Moonraker ..."
-    git clone $moonraker_git --depth 1
+    git clone $moonraker_git
     echo "##### Done!"
 }
 
