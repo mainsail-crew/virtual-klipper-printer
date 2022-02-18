@@ -8,7 +8,6 @@ simulavr_cfg="/usr/src/simulavr.config"
 
 printer_cfg="https://raw.githubusercontent.com/th33xitus/klipper-printer-simulavr-docker/master/example-configs/printer.cfg"
 moonraker_conf="https://raw.githubusercontent.com/th33xitus/klipper-printer-simulavr-docker/master/example-configs/moonraker.conf"
-atmega_cfg="https://raw.githubusercontent.com/th33xitus/klipper-printer-simulavr-docker/master/example-configs/atmega644p.cfg"
 
 cd ~ || exit 1
 [ ! -d ~/klipper_config ] && mkdir klipper_config
@@ -78,7 +77,6 @@ download_configs(){
     cd ~/klipper_config || exit 1
     [ ! -f ~/klipper_config/printer.cfg ] && curl -O $printer_cfg
     [ ! -f ~/klipper_config/moonraker.conf ] && curl -O $moonraker_conf
-    [ ! -f ~/klipper_config/atmega644p.cfg ] && curl -O $atmega_cfg
     cd ~ || exit 1
 }
 
