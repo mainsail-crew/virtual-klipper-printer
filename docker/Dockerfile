@@ -5,7 +5,6 @@ RUN apt-get update && apt-get install -y \
     --no-install-suggests \
     ### non specific packages
     git \
-    sudo \
     swig \
     virtualenv \
     ### klipper
@@ -15,7 +14,6 @@ RUN apt-get update && apt-get install -y \
     cmake \
     gcc-avr \
     ### moonraker
-    supervisor \
     curl \
     iproute2 \
     libcurl4-openssl-dev \
@@ -36,11 +34,9 @@ WORKDIR /build
 
 ### Prepare our applications
 #### Klipper
-RUN git clone --depth=1 https://github.com/klipper3d/klipper && \
-    rm -rf klipper/docs klipper/test klipper/.github && \
+RUN git clone https://github.com/klipper3d/klipper && \
     virtualenv -p python3 /build/klippy-env && \
-    /build/klippy-env/bin/pip install -r /build/klipper/scripts/klippy-requirements.txt && \
-    rm -rf lib
+    /build/klippy-env/bin/pip install -r /build/klipper/scripts/klippy-requirements.txt
 
 #### Simulavr
 COPY docker/simulavr.config /usr/src
@@ -58,8 +54,7 @@ RUN git clone -b master git://git.savannah.nongnu.org/simulavr.git && \
     make clean
 
 #### Moonraker
-RUN git clone --depth=1 https://github.com/Arksine/moonraker && \
-    rm -rf moonraker/docs moonraker/tests moonraker/.github && \
+RUN git clone https://github.com/Arksine/moonraker && \
     virtualenv -p python3 /build/moonraker-env && \
     /build/moonraker-env/bin/pip install -r /build/moonraker/scripts/moonraker-requirements.txt
 
@@ -71,15 +66,13 @@ RUN apt-get update && apt-get install -y \
     --no-install-suggests \
     ### non specific packages
     git \
+    build-essential \
     supervisor \
     sudo \
-    swig \
     ### moonraker
     curl \
     iproute2 \
-    python3-libgpiod \
     libcurl4-openssl-dev \
-    libjpeg-dev \
     liblmdb-dev \
     libopenjp2-7 \
     libsodium-dev \
@@ -96,18 +89,20 @@ RUN groupadd --force -g 1000 printer \
 
 ### copy all required files
 COPY docker/supervisord.conf /etc/supervisor/supervisord.conf
-COPY docker/service_control.sh /bin/service_control
 COPY docker/start.sh /bin/start
+COPY docker/service_control.sh /bin/service_control
 
 ### make entrypoint executable
 RUN chmod +x /bin/start
+RUN chmod +x /bin/service_control
 
 USER printer
 WORKDIR /home/printer
 
+
 # Copy our prebuilt applications from the builder stage
 COPY --from=builder --chown=printer:printer /build/klippy-env ./klippy-env
-COPY --from=builder --chown=printer:printer /build/klipper ./klipper
+COPY --from=builder --chown=printer:printer /build/klipper/ ./klipper/
 COPY --from=builder --chown=printer:printer /build/moonraker ./moonraker
 COPY --from=builder --chown=printer:printer /build/moonraker-env ./moonraker-env
 COPY --from=builder --chown=printer:printer /build/simulavr ./simulavr
