@@ -111,6 +111,7 @@ COPY --from=builder --chown=printer:printer /build/klipper ./klipper
 COPY --from=builder --chown=printer:printer /build/moonraker ./moonraker
 COPY --from=builder --chown=printer:printer /build/moonraker-env ./moonraker-env
 COPY --from=builder --chown=printer:printer /build/simulavr ./simulavr
+COPY --from=builder --chown=printer:printer /build/simulavr.elf ./simulavr.elf
 
 COPY ./example-configs/ ./example-configs/
 
