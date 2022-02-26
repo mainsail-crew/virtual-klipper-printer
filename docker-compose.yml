@@ -4,7 +4,7 @@ services:
     container_name: printer
     build:
       context: .
-      dockerfile: docker/Dockerfile
+      dockerfile: Dockerfile
     volumes:
       - ./printer_storage/.moonraker_database:/home/printer/.moonraker_database:delegated
       - ./printer_storage/gcode_files:/home/printer/gcode_files:delegated

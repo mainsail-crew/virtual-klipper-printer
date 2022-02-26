@@ -13,18 +13,10 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     cmake \
     gcc-avr \
-    ### moonraker
-    curl \
-    iproute2 \
     libcurl4-openssl-dev \
-    libjpeg-dev \
-    liblmdb-dev \
-    libopenjp2-7 \
-    libsodium-dev \
     libssl-dev \
     python3-dev \
     python3-libgpiod \
-    zlib1g-dev \
     ### clean up
     && apt-get -y autoremove \
     && apt-get clean \
@@ -39,7 +31,7 @@ RUN git clone https://github.com/klipper3d/klipper && \
     /build/klippy-env/bin/pip install -r /build/klipper/scripts/klippy-requirements.txt
 
 #### Simulavr
-COPY docker/simulavr.config /usr/src
+COPY config/simulavr.config /usr/src
 RUN git clone -b master git://git.savannah.nongnu.org/simulavr.git && \
     # Build the firmware
     cd klipper && \
@@ -88,9 +80,9 @@ RUN groupadd --force -g 1000 printer \
     && echo 'printer ALL=(ALL:ALL) NOPASSWD:ALL' >> /etc/sudoers.d/printer
 
 ### copy all required files
-COPY docker/supervisord.conf /etc/supervisor/supervisord.conf
-COPY docker/start.sh /bin/start
-COPY docker/service_control.sh /bin/service_control
+COPY config/supervisord.conf /etc/supervisor/supervisord.conf
+COPY scripts/start.sh /bin/start
+COPY scripts/service_control.sh /bin/service_control
 
 ### make entrypoint executable
 RUN chmod +x /bin/start
@@ -98,7 +90,6 @@ RUN chmod +x /bin/service_control
 
 USER printer
 WORKDIR /home/printer
-
 
 # Copy our prebuilt applications from the builder stage
 COPY --from=builder --chown=printer:printer /build/klippy-env ./klippy-env
