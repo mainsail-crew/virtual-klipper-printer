@@ -1,5 +1,5 @@
-[![Project Maintenance](https://img.shields.io/maintenance/yes/2022.svg)](https://github.com/th33xitus/klipper-printer-simulavr-docker 'GitHub Repository')
-[![License](https://img.shields.io/github/license/th33xitus/klipper-printer-simulavr-docker.svg)](https://github.com/th33xitus/klipper-printer-simulavr-docker/blob/master/LICENSE 'License')
+[![Project Maintenance](https://img.shields.io/maintenance/yes/2022.svg)](https://github.com/mainsail-crew/virtual-klipper-printer 'GitHub Repository')
+[![License](https://img.shields.io/github/license/mainsail-crew/virtual-klipper-printer.svg)](https://github.com/mainsail-crew/virtual-klipper-printer/blob/master/LICENSE 'License')
 ---
 # Virtual-Klipper-Printer
 
