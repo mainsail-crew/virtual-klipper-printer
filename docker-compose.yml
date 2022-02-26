@@ -1,13 +1,15 @@
 version: "3.8"
 services:
   printer:
-    container_name: klipper-printer-simulavr
+    container_name: printer
     build:
-      context: docker
-      dockerfile: Dockerfile
-    image: klipper-printer-simulavr
+      context: .
+      dockerfile: docker/Dockerfile
     volumes:
-      - ./printer:/home/printer
+      - ./printer_storage/.moonraker_database:/home/printer/.moonraker_database:delegated
+      - ./printer_storage/gcode_files:/home/printer/gcode_files:delegated
+      - ./printer_storage/klipper_config:/home/printer/klipper_config:delegated
+      - ./printer_storage/klipper_logs:/home/printer/klipper_logs:delegated
     ports:
       - "7125:7125"
     networks:
