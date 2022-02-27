@@ -1,5 +1,5 @@
-[![Project Maintenance](https://img.shields.io/maintenance/yes/2022.svg)](https://github.com/mainsail-crew/virtual-klipper-printer 'GitHub Repository')
 [![License](https://img.shields.io/github/license/mainsail-crew/virtual-klipper-printer.svg)](https://github.com/mainsail-crew/virtual-klipper-printer/blob/master/LICENSE 'License')
+[![Project Maintenance](https://img.shields.io/maintenance/yes/2022.svg)](https://github.com/mainsail-crew/virtual-klipper-printer 'GitHub Repository')
 ---
 # Virtual-Klipper-Printer
 
@@ -13,20 +13,12 @@
 
 ---
 
-Notes:
-* The first start of the container will take a moment since all components have to be downloaded and/or compiled
-* You can access the containers shell with the following command:\
-`docker exec -it <CONTAINER ID> bash`
-* You get the `<CONTAINER ID>` with the following command:\
-`docker ps`
-* Restart the container with:\
-`docker container restart <CONTAINER ID>`
-
-
+Common docker commands:
+* Get all container IDs: `docker ps -a`
+* Get only the ID of running containers: `docker ps`
+* Access a containers shell: `docker exec -it <CONTAINER ID> bash`
+* Start/Restart/Stop a container: `docker container start/restart/stop <CONTAINER ID>`
+* Rebuild image, recreate and start container : `docker-compose up -d --build`
 
 ---
-Klipper, Moonraker and a simulated Atmel ATmega micro-controller now run inside of the Docker container and you can use it for whatever reason you decided to clone this repository 😄.
-
-The container is build in a way, that you are able to quickly "re-install" Klipper and Moonraker or can quickly re-build the python environments or the firmware if that is ever necessary. For that, simply delete the corresponding folder/file and restart the container and the required components will be "installed" again.
-
-Feel free to contribute if you find solutions to make the docker image even smaller (~679 MB as of now) or provide ideas to generally improve this project.
+Current image size: ~685 MB
