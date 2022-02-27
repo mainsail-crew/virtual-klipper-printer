@@ -6,21 +6,14 @@ cd ~ || exit 1
 [ ! -d ~/klipper_logs ] && mkdir klipper_logs
 [ ! -d ~/gcode_files ] && mkdir gcode_files
 
-download_configs(){
-    cd ~/klipper_config || exit 1
-    [ ! -f ~/klipper_config/printer.cfg ] && cp /home/printer/example-configs/printer.cfg .
-    [ ! -f ~/klipper_config/moonraker.conf ] && cp /home/printer/example-configs/moonraker.conf .
-    cd ~ || exit 1
-}
+[ ! -f ~/klipper_config/printer.cfg ] && \
+cp ~/example-configs/printer.cfg ~/klipper_config/printer.cfg
+[ ! -f ~/klipper_config/moonraker.conf ] && \
+cp ~/example-configs/moonraker.conf ~/klipper_config/moonraker.conf
 
-regain_ownership(){
-    sudo chown -R printer:printer ~/klipper_config
-    sudo chown -R printer:printer ~/klipper_logs
-    sudo chown -R printer:printer ~/gcode_files
-}
-
-download_configs
-regain_ownership
+sudo chown -R printer:printer ~/klipper_config
+sudo chown -R printer:printer ~/klipper_logs
+sudo chown -R printer:printer ~/gcode_files
 
 sudo -S rm /bin/systemctl
 sudo -S ln -s /bin/service_control /bin/systemctl
