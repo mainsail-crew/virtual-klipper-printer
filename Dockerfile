@@ -3,7 +3,7 @@ FROM python:3.10-slim-bullseye AS builder
 RUN apt-get update && apt-get install -y \
     --no-install-recommends \
     --no-install-suggests \
-    ### non specific packages
+    ### non-specific packages
     git \
     swig \
     virtualenv \
@@ -50,13 +50,25 @@ RUN git clone https://github.com/Arksine/moonraker && \
     virtualenv -p python3 /build/moonraker-env && \
     /build/moonraker-env/bin/pip install -r /build/moonraker/scripts/moonraker-requirements.txt
 
+#### MJPG-Streamer
+RUN git clone --depth 1 https://github.com/jacksonliam/mjpg-streamer \
+    && cd mjpg-streamer \
+    && cd mjpg-streamer-experimental \
+    && mkdir _build \
+    && cd _build \
+    && cmake -DPLUGIN_INPUT_HTTP=OFF -DPLUGIN_INPUT_UVC=OFF -DPLUGIN_OUTPUT_FILE=OFF -DPLUGIN_OUTPUT_RTSP=OFF -DPLUGIN_OUTPUT_UDP=OFF .. \
+    && cd .. \
+    && make \
+    && rm -rf _build
+COPY mjpg_streamer_images ./mjpg-streamer/mjpg-streamer-experimental/images
+
 ## --------- This is the runner image
 
 FROM python:3.10-slim-bullseye AS runner
 RUN apt-get update && apt-get install -y \
     --no-install-recommends \
     --no-install-suggests \
-    ### non specific packages
+    ### non-specific packages
     git \
     build-essential \
     supervisor \
@@ -98,6 +110,7 @@ COPY --from=builder --chown=printer:printer /build/moonraker ./moonraker
 COPY --from=builder --chown=printer:printer /build/moonraker-env ./moonraker-env
 COPY --from=builder --chown=printer:printer /build/simulavr ./simulavr
 COPY --from=builder --chown=printer:printer /build/simulavr.elf ./simulavr.elf
+COPY --from=builder --chown=printer:printer /build/mjpg-streamer/mjpg-streamer-experimental ./mjpg-streamer
 
 COPY ./example-configs/ ./example-configs/
 
