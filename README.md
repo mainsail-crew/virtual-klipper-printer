@@ -14,9 +14,9 @@
 ---
 
 ### Configure a Dummy-Webcam:
-1) To configure a dummy-webcam, use the following URL for the stream: \
-`http://localhost:8110/?action=stream`
-2) In Mainsail pick either `MJPEG-Streamer` or `UV4L-MJPEG` as service.
+To configure a dummy-webcam, use the following URLs: \
+   * Stream: `http://localhost:8110/?action=stream`
+   * Snapshot: `http://localhost:8110/?action=snapshot`
 
 ---
 

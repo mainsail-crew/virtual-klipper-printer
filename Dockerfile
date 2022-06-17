@@ -61,7 +61,6 @@ RUN git clone --depth 1 https://github.com/jacksonliam/mjpg-streamer \
     && cd .. \
     && make \
     && rm -rf _build
-COPY mjpg_streamer_images ./mjpg-streamer/mjpg-streamer-experimental/images
 
 ## --------- This is the runner image
 
@@ -114,5 +113,6 @@ COPY --from=builder --chown=printer:printer /build/simulavr.elf ./simulavr.elf
 COPY --from=builder --chown=printer:printer /build/mjpg-streamer/mjpg-streamer-experimental ./mjpg-streamer
 
 COPY ./example-configs/ ./example-configs/
+COPY ./mjpg_streamer_images/ ./mjpg_streamer_images/
 
 ENTRYPOINT ["/bin/start"]
