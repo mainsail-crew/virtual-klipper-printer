@@ -26,29 +26,30 @@ WORKDIR /build
 
 ### Prepare our applications
 #### Klipper
-RUN git clone https://github.com/klipper3d/klipper && \
-    virtualenv -p python3 /build/klippy-env && \
-    /build/klippy-env/bin/pip install -r /build/klipper/scripts/klippy-requirements.txt
+RUN git clone https://github.com/klipper3d/klipper \
+    && virtualenv -p python3 /build/klippy-env \
+    && /build/klippy-env/bin/pip install -r /build/klipper/scripts/klippy-requirements.txt
 
 #### Simulavr
 COPY config/simulavr.config /usr/src
-RUN git clone -b master git://git.savannah.nongnu.org/simulavr.git && \
+RUN git clone -b master git://git.savannah.nongnu.org/simulavr.git \
     # Build the firmware
-    cd klipper && \
-    cp /usr/src/simulavr.config .config && \
-    make PYTHON=python3 && \
-    cp out/klipper.elf /build/simulavr.elf && \
-    rm -f .config && make PYTHON=python3 clean && \
+    && cd klipper \
+    && cp /usr/src/simulavr.config .config \
+    && make PYTHON=python3 \
+    && cp out/klipper.elf /build/simulavr.elf \
+    && rm -f .config \
+    && make PYTHON=python3 clean \
     # Build simulavr
-    cd ../simulavr && \
-    make python && \
-    make build && \
-    make clean
+    && cd ../simulavr \
+    && make python \
+    && make build \
+    && make clean
 
 #### Moonraker
-RUN git clone https://github.com/Arksine/moonraker && \
-    virtualenv -p python3 /build/moonraker-env && \
-    /build/moonraker-env/bin/pip install -r /build/moonraker/scripts/moonraker-requirements.txt
+RUN git clone https://github.com/Arksine/moonraker \
+    && virtualenv -p python3 /build/moonraker-env \
+    && /build/moonraker-env/bin/pip install -r /build/moonraker/scripts/moonraker-requirements.txt
 
 #### MJPG-Streamer
 RUN git clone --depth 1 https://github.com/jacksonliam/mjpg-streamer \
