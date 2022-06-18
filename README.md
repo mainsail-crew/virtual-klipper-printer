@@ -28,4 +28,4 @@ To configure a dummy-webcam, use the following URLs:
 * Rebuild image, recreate and start container : `docker-compose up -d --build`
 
 ---
-Current image size: 733.73 MB
+Current image size: 734.45 MB
