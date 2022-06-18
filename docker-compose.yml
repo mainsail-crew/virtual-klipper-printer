@@ -10,7 +10,7 @@ services:
       - ./printer_storage/gcode_files:/home/printer/gcode_files:delegated
       - ./printer_storage/klipper_config:/home/printer/klipper_config:delegated
       - ./printer_storage/klipper_logs:/home/printer/klipper_logs:delegated
-      - ./printer_storage/webcam_images:/home/printer/mjpg-streamer/images:delegated
+      - ./printer_storage/webcam_images:/home/printer/webcam_images:delegated
     ports:
       - "7125:7125"
       - "8110:8080"

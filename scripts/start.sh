@@ -1,31 +1,78 @@
-#!/bin/bash
-[ ! -e /bin/systemctl ] && sudo -S ln -s /bin/true /bin/systemctl
+#!/usr/bin/env bash
 
-cd ~ || exit
-[ ! -d ~/klipper_config ] && mkdir klipper_config
-[ ! -d ~/klipper_logs ] && mkdir klipper_logs
-[ ! -d ~/gcode_files ] && mkdir gcode_files
-[ ! -d ~/webcam_images ] && mkdir webcam_images
-[ ! -d ~/.moonraker_database ] && mkdir .moonraker_database
+#=======================================================================#
+# Copyright (C) 2022 mainsail-crew <https://github.com/mainsail-crew>   #
+# Author: Dominik Willner <th33xitus@gmail.com>                         #
+#                                                                       #
+# This file is part of virtual-klipper-printer                          #
+# https://github.com/mainsail-crew/virtual-klipper-printer              #
+#                                                                       #
+# This file may be distributed under the terms of the GNU GPLv3 license #
+#=======================================================================#
 
-if find ~/klipper_config -type d -empty; then
-  cd ~/example-configs || exit 1
-  sudo cp -r ./* ~/klipper_config
-fi
+set -e
 
-if find ~/webcam_images -type d -empty; then
-  cd ~/mjpg_streamer_images || exit 1
-  sudo cp -r ./* ~/webcam_images
-fi
+REQUIRED_FOLDERS=(
+  "${HOME}/klipper_config"
+  "${HOME}/klipper_logs"
+  "${HOME}/gcode_files"
+  "${HOME}/webcam_images"
+  "${HOME}/.moonraker_database"
+)
 
-sudo chown -R printer:printer ~/klipper_config
-sudo chown -R printer:printer ~/klipper_logs
-sudo chown -R printer:printer ~/gcode_files
-sudo chown -R printer:printer ~/webcam_images
-sudo chown -R printer:printer ~/.moonraker_database
+function status_msg() {
+  echo "###[$(date +%T)]: ${1}"
+}
+
+######
+# Test for correct ownership of all required folders
+###
+function check_folder_perms() {
+  status_msg "Check folders permissions ..."
+  for folder in "${REQUIRED_FOLDERS[@]}"; do
+    if [[ $(stat -c "%U" "${folder}") != "printer" ]]; then
+      status_msg "chown for user: 'printer' on folder: ${folder}"
+      sudo chown printer:printer "${folder}"
+    fi
+  done
+  status_msg "OK!"
+}
+
+######
+# Copy example configs if ~/klipper_config is empty
+###
+function copy_example_configs() {
+  if [[ ! "$(ls -A "${HOME}/klipper_config")" ]]; then
+    status_msg "Directory ${HOME}/klipper_config is empty!"
+    status_msg "Copy example configs ..."
+    cp -R ~/example-configs/* ~/klipper_config
+    status_msg "OK!"
+  fi
+}
+
+######
+# Copy dummy images if ~/webcam_images is empty
+###
+function copy_dummy_images() {
+  if [[ ! "$(ls -A "${HOME}/webcam_images")" ]]; then
+    status_msg "Directory ${HOME}/webcam_images is empty!"
+    status_msg "Copy dummy images ..."
+    cp -R ~/mjpg_streamer_images/*.jpg ~/webcam_images
+    status_msg "OK!"
+  fi
+}
+
+#===================================================#
+#===================================================#
+
+[[ ! -e /bin/systemctl ]] && sudo -S ln -s /bin/true /bin/systemctl
+
+check_folder_perms
+copy_example_configs
+copy_dummy_images
 
 sudo -S rm /bin/systemctl
 sudo -S ln -s /bin/service_control /bin/systemctl
 
-cd ~ && echo "Everything is ready ... Starting ..."
+cd ~ && status_msg "Everything is ready! Starting ..."
 /usr/bin/supervisord

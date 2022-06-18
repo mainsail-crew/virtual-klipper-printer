@@ -112,6 +112,7 @@ COPY --from=builder --chown=printer:printer /build/simulavr ./simulavr
 COPY --from=builder --chown=printer:printer /build/simulavr.elf ./simulavr.elf
 COPY --from=builder --chown=printer:printer /build/mjpg-streamer/mjpg-streamer-experimental ./mjpg-streamer
 
+# Copy example configs and dummy streamer images
 COPY ./example-configs/ ./example-configs/
 COPY ./mjpg_streamer_images/ ./mjpg_streamer_images/
 

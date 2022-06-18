@@ -9,12 +9,12 @@
 ### Setup Instructions:
 1. Clone this repository
 2. Open a terminal in the cloned folder
-3. Run `docker-compose up -d` to build the docker image and start the container afterwards in detached mode
+3. Run `docker-compose up -d` to build the docker image and start the container in detached mode
 
 ---
 
 ### Configure a Dummy-Webcam:
-To configure a dummy-webcam, use the following URLs: \
+To configure a dummy-webcam, use the following URLs:
    * Stream: `http://localhost:8110/?action=stream`
    * Snapshot: `http://localhost:8110/?action=snapshot`
 
