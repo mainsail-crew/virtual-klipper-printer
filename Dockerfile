@@ -3,7 +3,7 @@ FROM python:3.10-slim-bullseye AS builder
 RUN apt-get update && apt-get install -y \
     --no-install-recommends \
     --no-install-suggests \
-    ### non specific packages
+    ### non-specific packages
     git \
     swig \
     virtualenv \
@@ -26,29 +26,41 @@ WORKDIR /build
 
 ### Prepare our applications
 #### Klipper
-RUN git clone https://github.com/klipper3d/klipper && \
-    virtualenv -p python3 /build/klippy-env && \
-    /build/klippy-env/bin/pip install -r /build/klipper/scripts/klippy-requirements.txt
+RUN git clone https://github.com/klipper3d/klipper \
+    && virtualenv -p python3 /build/klippy-env \
+    && /build/klippy-env/bin/pip install -r /build/klipper/scripts/klippy-requirements.txt
 
 #### Simulavr
 COPY config/simulavr.config /usr/src
-RUN git clone -b master git://git.savannah.nongnu.org/simulavr.git && \
+RUN git clone -b master git://git.savannah.nongnu.org/simulavr.git \
     # Build the firmware
-    cd klipper && \
-    cp /usr/src/simulavr.config .config && \
-    make PYTHON=python3 && \
-    cp out/klipper.elf /build/simulavr.elf && \
-    rm -f .config && make PYTHON=python3 clean && \
+    && cd klipper \
+    && cp /usr/src/simulavr.config .config \
+    && make PYTHON=python3 \
+    && cp out/klipper.elf /build/simulavr.elf \
+    && rm -f .config \
+    && make PYTHON=python3 clean \
     # Build simulavr
-    cd ../simulavr && \
-    make python && \
-    make build && \
-    make clean
+    && cd ../simulavr \
+    && make python \
+    && make build \
+    && make clean
 
 #### Moonraker
-RUN git clone https://github.com/Arksine/moonraker && \
-    virtualenv -p python3 /build/moonraker-env && \
-    /build/moonraker-env/bin/pip install -r /build/moonraker/scripts/moonraker-requirements.txt
+RUN git clone https://github.com/Arksine/moonraker \
+    && virtualenv -p python3 /build/moonraker-env \
+    && /build/moonraker-env/bin/pip install -r /build/moonraker/scripts/moonraker-requirements.txt
+
+#### MJPG-Streamer
+RUN git clone --depth 1 https://github.com/jacksonliam/mjpg-streamer \
+    && cd mjpg-streamer \
+    && cd mjpg-streamer-experimental \
+    && mkdir _build \
+    && cd _build \
+    && cmake -DPLUGIN_INPUT_HTTP=OFF -DPLUGIN_INPUT_UVC=OFF -DPLUGIN_OUTPUT_FILE=OFF -DPLUGIN_OUTPUT_RTSP=OFF -DPLUGIN_OUTPUT_UDP=OFF .. \
+    && cd .. \
+    && make \
+    && rm -rf _build
 
 ## --------- This is the runner image
 
@@ -56,7 +68,7 @@ FROM python:3.10-slim-bullseye AS runner
 RUN apt-get update && apt-get install -y \
     --no-install-recommends \
     --no-install-suggests \
-    ### non specific packages
+    ### non-specific packages
     git \
     build-essential \
     supervisor \
@@ -98,7 +110,10 @@ COPY --from=builder --chown=printer:printer /build/moonraker ./moonraker
 COPY --from=builder --chown=printer:printer /build/moonraker-env ./moonraker-env
 COPY --from=builder --chown=printer:printer /build/simulavr ./simulavr
 COPY --from=builder --chown=printer:printer /build/simulavr.elf ./simulavr.elf
+COPY --from=builder --chown=printer:printer /build/mjpg-streamer/mjpg-streamer-experimental ./mjpg-streamer
 
+# Copy example configs and dummy streamer images
 COPY ./example-configs/ ./example-configs/
+COPY ./mjpg_streamer_images/ ./mjpg_streamer_images/
 
 ENTRYPOINT ["/bin/start"]

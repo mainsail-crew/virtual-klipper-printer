@@ -6,14 +6,21 @@
 ### **Run a simulated Klipper 3D-Printer in a Docker container.**
 ---
 
-### Instructions:
+### Setup Instructions:
 1. Clone this repository
 2. Open a terminal in the cloned folder
-3. Run `docker-compose up -d` to build the docker image and start the container afterwards in detached mode
+3. Run `docker-compose up -d` to build the docker image and start the container in detached mode
 
 ---
 
-Common docker commands:
+### Configure a Dummy-Webcam:
+To configure a dummy-webcam, use the following URLs:
+   * Stream: `http://localhost:8110/?action=stream`
+   * Snapshot: `http://localhost:8110/?action=snapshot`
+
+---
+
+### Common Docker commands:
 * Get all container IDs: `docker ps -a`
 * Get only the ID of running containers: `docker ps`
 * Access a containers shell: `docker exec -it <CONTAINER ID> bash`
@@ -21,4 +28,4 @@ Common docker commands:
 * Rebuild image, recreate and start container : `docker-compose up -d --build`
 
 ---
-Current image size: ~685 MB
+Current image size: 734.45 MB
