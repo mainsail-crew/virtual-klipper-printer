@@ -62,6 +62,28 @@ function copy_dummy_images() {
   fi
 }
 
+######
+# Link moonraker-timelapse component to moonraker components
+###
+function link_timelapse() {
+  local component_source="${HOME}/moonraker-timelapse/component/timelapse.py"
+  local component_target="${HOME}/moonraker/moonraker/components/timelapse.py"
+  local macro_source="${HOME}/moonraker-timelapse/klipper_macro/timelapse.cfg"
+  local macro_target="${HOME}/klipper_config/addons/timelapse.cfg"
+
+  if [[ -f ${component_source} && ! -h ${component_target} ]]; then
+    status_msg "Linking moonraker-timelapse component ..."
+    ln -sf "${component_source}" "${component_target}"
+    status_msg "OK!"
+  fi
+
+  if [[ -f ${macro_source} && ! -h ${macro_target} ]]; then
+    status_msg "Linking timelapse.cfg ..."
+    ln -sf "${macro_source}" "${macro_target}"
+    status_msg "OK!"
+  fi
+}
+
 #===================================================#
 #===================================================#
 
@@ -70,6 +92,7 @@ function copy_dummy_images() {
 check_folder_perms
 copy_example_configs
 copy_dummy_images
+link_timelapse
 
 sudo -S rm /bin/systemctl
 sudo -S ln -s /bin/service_control /bin/systemctl
