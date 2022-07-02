@@ -51,6 +51,9 @@ RUN git clone https://github.com/Arksine/moonraker \
     && virtualenv -p python3 /build/moonraker-env \
     && /build/moonraker-env/bin/pip install -r /build/moonraker/scripts/moonraker-requirements.txt
 
+#### Moonraker Timelapse
+RUN git clone https://github.com/mainsail-crew/moonraker-timelapse
+
 #### MJPG-Streamer
 RUN git clone --depth 1 https://github.com/jacksonliam/mjpg-streamer \
     && cd mjpg-streamer \
@@ -108,6 +111,7 @@ COPY --from=builder --chown=printer:printer /build/klippy-env ./klippy-env
 COPY --from=builder --chown=printer:printer /build/klipper/ ./klipper/
 COPY --from=builder --chown=printer:printer /build/moonraker ./moonraker
 COPY --from=builder --chown=printer:printer /build/moonraker-env ./moonraker-env
+COPY --from=builder --chown=printer:printer /build/moonraker-timelapse ./moonraker-timelapse
 COPY --from=builder --chown=printer:printer /build/simulavr ./simulavr
 COPY --from=builder --chown=printer:printer /build/simulavr.elf ./simulavr.elf
 COPY --from=builder --chown=printer:printer /build/mjpg-streamer/mjpg-streamer-experimental ./mjpg-streamer
