@@ -17,6 +17,7 @@ REQUIRED_FOLDERS=(
   "${HOME}/klipper_logs"
   "${HOME}/gcode_files"
   "${HOME}/webcam_images"
+  "${HOME}/timelapse"
   "${HOME}/.moonraker_database"
 )
 
