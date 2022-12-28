@@ -13,12 +13,13 @@
 set -e
 
 REQUIRED_FOLDERS=(
-  "${HOME}/klipper_config"
-  "${HOME}/klipper_logs"
-  "${HOME}/gcode_files"
-  "${HOME}/webcam_images"
-  "${HOME}/timelapse"
-  "${HOME}/.moonraker_database"
+  "${HOME}/printer_data"
+  "${HOME}/printer_data/config"
+  "${HOME}/printer_data/logs"
+  "${HOME}/printer_data/gcodes"
+  "${HOME}/printer_data/webcam_images"
+  "${HOME}/printer_data/timelapse"
+  "${HOME}/printer_data/database"
 )
 
 function status_msg() {
@@ -40,13 +41,13 @@ function check_folder_perms() {
 }
 
 ######
-# Copy example configs if ~/klipper_config is empty
+# Copy example configs if ~/printer_data/config is empty
 ###
 function copy_example_configs() {
-  if [[ ! "$(ls -A "${HOME}/klipper_config")" ]]; then
-    status_msg "Directory ${HOME}/klipper_config is empty!"
+  if [[ ! "$(ls -A "${HOME}/printer_data/config")" ]]; then
+    status_msg "Directory ${HOME}/printer_data/config is empty!"
     status_msg "Copy example configs ..."
-    cp -R ~/example-configs/* ~/klipper_config
+    cp -R ~/example-configs/* ~/printer_data/config
     status_msg "OK!"
   fi
 }
@@ -55,10 +56,10 @@ function copy_example_configs() {
 # Copy dummy images if ~/webcam_images is empty
 ###
 function copy_dummy_images() {
-  if [[ ! "$(ls -A "${HOME}/webcam_images")" ]]; then
-    status_msg "Directory ${HOME}/webcam_images is empty!"
+  if [[ ! "$(ls -A "${HOME}/printer_data/webcam_images")" ]]; then
+    status_msg "Directory ${HOME}/printer_data/webcam_images is empty!"
     status_msg "Copy dummy images ..."
-    cp -R ~/mjpg_streamer_images/*.jpg ~/webcam_images
+    cp -R ~/mjpg_streamer_images/*.jpg ~/printer_data/webcam_images
     status_msg "OK!"
   fi
 }
@@ -70,7 +71,7 @@ function link_timelapse() {
   local component_source="${HOME}/moonraker-timelapse/component/timelapse.py"
   local component_target="${HOME}/moonraker/moonraker/components/timelapse.py"
   local macro_source="${HOME}/moonraker-timelapse/klipper_macro/timelapse.cfg"
-  local macro_target="${HOME}/klipper_config/addons/timelapse.cfg"
+  local macro_target="${HOME}/printer_data/config/addons/timelapse.cfg"
 
   if [[ -f ${component_source} && ! -h ${component_target} ]]; then
     status_msg "Linking moonraker-timelapse component ..."
