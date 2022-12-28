@@ -6,12 +6,12 @@ services:
       context: .
       dockerfile: Dockerfile
     volumes:
-      - ./printer_storage/.moonraker_database:/home/printer/.moonraker_database:delegated
-      - ./printer_storage/gcode_files:/home/printer/gcode_files:delegated
-      - ./printer_storage/klipper_config:/home/printer/klipper_config:delegated
-      - ./printer_storage/klipper_logs:/home/printer/klipper_logs:delegated
-      - ./printer_storage/webcam_images:/home/printer/webcam_images:delegated
-      - ./printer_storage/timelapse:/home/printer/timelapse:delegated
+      - ./printer_data/database:/home/printer/printer_data/database:delegated
+      - ./printer_data/gcodes:/home/printer/printer_data/gcodes:delegated
+      - ./printer_data/config:/home/printer/printer_data/config:delegated
+      - ./printer_data/logs:/home/printer/printer_data/logs:delegated
+      - ./printer_data/webcam_images:/home/printer/printer_data/webcam_images:delegated
+      - ./printer_data/timelapse:/home/printer/printer_data/timelapse:delegated
     ports:
       - "7125:7125"
       - "8110:8080"
