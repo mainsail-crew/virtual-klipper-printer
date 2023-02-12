@@ -27,11 +27,17 @@ function status_msg() {
 }
 
 ######
-# Test for correct ownership of all required folders
+# Test if all requierd folders exist if not create them and
+# test for correct ownership of all required folders
 ###
-function check_folder_perms() {
+function check_folder_perms_and_create() {
   status_msg "Check folders permissions ..."
   for folder in "${REQUIRED_FOLDERS[@]}"; do
+
+	if [ ! -d "$folder" ]; then
+		mkdir "$folder"
+	fi
+
     if [[ $(stat -c "%U" "${folder}") != "printer" ]]; then
       status_msg "chown for user: 'printer' on folder: ${folder}"
       sudo chown printer:printer "${folder}"
@@ -91,7 +97,7 @@ function link_timelapse() {
 
 [[ ! -e /bin/systemctl ]] && sudo -S ln -s /bin/true /bin/systemctl
 
-check_folder_perms
+check_folder_perms_and_create
 copy_example_configs
 copy_dummy_images
 link_timelapse
