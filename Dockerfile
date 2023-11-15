@@ -32,7 +32,7 @@ RUN git clone https://github.com/klipper3d/klipper \
 
 #### Simulavr
 COPY config/simulavr.config /usr/src
-RUN git clone -b master git://git.savannah.nongnu.org/simulavr.git \
+RUN git clone -b master https://git.savannah.nongnu.org/git/simulavr.git \
     # Build the firmware
     && cd klipper \
     && cp /usr/src/simulavr.config .config \
