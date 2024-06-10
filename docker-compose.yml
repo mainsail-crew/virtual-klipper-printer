@@ -5,6 +5,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        KLIPPER_REPO: ${KLIPPER_REPO:-https://github.com/Klipper3d/klipper.git}
     volumes:
       - ./printer_data:/home/printer/printer_data:delegated
     ports:
