@@ -26,7 +26,9 @@ WORKDIR /build
 
 ### Prepare our applications
 #### Klipper
-RUN git clone https://github.com/klipper3d/klipper \
+ARG KLIPPER_REPO
+ENV KLIPPER_REPO=${KLIPPER_REPO}
+RUN git clone ${KLIPPER_REPO} klipper \
     && virtualenv -p python3 /build/klippy-env \
     && /build/klippy-env/bin/pip install -r /build/klipper/scripts/klippy-requirements.txt
 
