@@ -1,4 +1,4 @@
-FROM python:3.10-slim-bullseye AS builder
+FROM python:3.12-slim-bookworm AS builder
 
 RUN apt-get update && apt-get install -y \
     --no-install-recommends \
@@ -15,6 +15,7 @@ RUN apt-get update && apt-get install -y \
     gcc-avr \
     libcurl4-openssl-dev \
     libssl-dev \
+    libffi-dev \
     python3-dev \
     python3-libgpiod \
     ### clean up
@@ -69,7 +70,7 @@ RUN git clone --depth 1 https://github.com/jacksonliam/mjpg-streamer \
 
 ## --------- This is the runner image
 
-FROM python:3.10-slim-bullseye AS runner
+FROM python:3.12-slim-bookworm AS runner
 RUN apt-get update && apt-get install -y \
     --no-install-recommends \
     --no-install-suggests \
