@@ -15,6 +15,7 @@ RUN apt-get update && apt-get install -y \
     gcc-avr \
     libcurl4-openssl-dev \
     libssl-dev \
+    libffi-dev \
     python3-dev \
     python3-libgpiod \
     ### clean up
