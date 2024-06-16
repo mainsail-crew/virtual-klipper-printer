@@ -9,7 +9,7 @@
 ### Setup Instructions:
 1. Clone this repository
 2. Open a terminal in the cloned folder
-3. Run `docker-compose up -d` to build the docker image and start the container in detached mode
+3. Run `docker compose up -d` to build the docker image and start the container in detached mode
 
 ---
 
@@ -25,7 +25,7 @@ To configure a dummy-webcam, use the following URLs:
 * Get only the ID of running containers: `docker ps`
 * Access a containers shell: `docker exec -it <CONTAINER ID> bash`
 * Start/Restart/Stop a container: `docker container start/restart/stop <CONTAINER ID>`
-* Rebuild image, recreate and start container : `docker-compose up -d --build`
+* Rebuild image, recreate and start container : `docker compose up -d --build`
 
 ---
 Current image size: 742.72 MB
