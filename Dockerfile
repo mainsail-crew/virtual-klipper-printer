@@ -87,6 +87,10 @@ RUN apt-get update && apt-get install -y \
     libopenjp2-7 \
     libsodium-dev \
     libssl-dev \
+    zlib1g-dev \
+    libjpeg-dev \
+    packagekit \
+    wireless-tools \
     ### clean up
     && apt-get -y autoremove \
     && apt-get clean \
