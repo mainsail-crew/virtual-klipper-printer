@@ -34,9 +34,9 @@ function check_folder_perms_and_create() {
   status_msg "Check folders permissions ..."
   for folder in "${REQUIRED_FOLDERS[@]}"; do
 
-	if [ ! -d "$folder" ]; then
-		mkdir "$folder"
-	fi
+    if [ ! -d "$folder" ]; then
+        mkdir "$folder"
+    fi
 
     if [[ $(stat -c "%U" "${folder}") != "printer" ]]; then
       status_msg "chown for user: 'printer' on folder: ${folder}"
