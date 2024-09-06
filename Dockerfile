@@ -30,7 +30,7 @@ WORKDIR /build
 
 ### Prepare our applications
 #### Klipper
-ARG KLIPPER_REPO
+ARG KLIPPER_REPO=https://github.com/Klipper3d/klipper.git
 ENV KLIPPER_REPO=${KLIPPER_REPO}
 RUN git clone ${KLIPPER_REPO} klipper \
     && virtualenv -p python3 /build/klippy-env \
