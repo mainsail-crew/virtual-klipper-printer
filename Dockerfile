@@ -18,6 +18,9 @@ RUN apt-get update && apt-get install -y \
     libffi-dev \
     python3-dev \
     python3-libgpiod \
+    python3-distutils \
+    ### \
+    && pip install setuptools \
     ### clean up
     && apt-get -y autoremove \
     && apt-get clean \
@@ -39,10 +42,10 @@ RUN git clone -b master https://git.savannah.nongnu.org/git/simulavr.git \
     # Build the firmware
     && cd klipper \
     && cp /usr/src/simulavr.config .config \
-    && make PYTHON=python3 \
+    && make \
     && cp out/klipper.elf /build/simulavr.elf \
     && rm -f .config \
-    && make PYTHON=python3 clean \
+    && make clean \
     # Build simulavr
     && cd ../simulavr \
     && make python \
