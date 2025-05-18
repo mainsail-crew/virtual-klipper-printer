@@ -108,10 +108,12 @@ RUN groupadd --force -g 1000 printer \
 COPY config/supervisord.conf /etc/supervisor/supervisord.conf
 COPY scripts/start.sh /bin/start
 COPY scripts/service_control.sh /bin/service_control
+COPY scripts/fix_venvs.sh /tmp/fix_venvs.sh
 
 ### make entrypoint executable
 RUN chmod +x /bin/start
 RUN chmod +x /bin/service_control
+RUN chmod +x /tmp/fix_venvs.sh
 
 USER printer
 WORKDIR /home/printer
@@ -130,4 +132,12 @@ COPY --from=builder --chown=printer:printer /build/mjpg-streamer/mjpg-streamer-e
 COPY ./example-configs/ ./example-configs/
 COPY ./mjpg_streamer_images/ ./mjpg_streamer_images/
 
+# Fix shebangs in venv directories
+RUN /tmp/fix_venvs.sh
+
+# Remove oneshot script
+USER root
+RUN rm /tmp/fix_venvs.sh
+
+USER printer
 ENTRYPOINT ["/bin/start"]
