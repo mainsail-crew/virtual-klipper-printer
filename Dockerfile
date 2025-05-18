@@ -38,7 +38,7 @@ RUN git clone ${KLIPPER_REPO} klipper \
 
 #### Simulavr
 COPY config/simulavr.config /usr/src
-RUN git clone -b master https://git.savannah.nongnu.org/git/simulavr.git \
+RUN git clone -b master git://git.savannah.gnu.org/simulavr.git \
     # Build the firmware
     && cd klipper \
     && cp /usr/src/simulavr.config .config \
