@@ -4,21 +4,12 @@ RUN apt-get update && apt-get install -y \
     --no-install-recommends \
     --no-install-suggests \
     ### non-specific packages
-    git \
-    swig \
-    virtualenv \
+    git swig virtualenv \
     ### klipper
-    avr-libc \
-    binutils-avr \
-    build-essential \
-    cmake \
-    gcc-avr \
-    libcurl4-openssl-dev \
-    libssl-dev \
-    libffi-dev \
-    python3-dev \
-    python3-libgpiod \
-    python3-distutils \
+    avr-libc binutils-avr build-essential cmake gcc-avr libcurl4-openssl-dev \
+    libssl-dev libffi-dev python3-dev python3-libgpiod python3-distutils \
+    ### simulavr
+    g++ make rst2pdf help2man texinfo \
     ### \
     && pip install setuptools \
     ### clean up
@@ -36,21 +27,23 @@ RUN git clone ${KLIPPER_REPO} klipper \
     && virtualenv -p python3 /build/klippy-env \
     && /build/klippy-env/bin/pip install -r /build/klipper/scripts/klippy-requirements.txt
 
-#### Simulavr
-COPY config/simulavr.config /usr/src
-RUN git clone -b master https://git.savannah.nongnu.org/git/simulavr.git \
+#### Build Firmware
+COPY config/simulavr.config /build/klipper/.config
     # Build the firmware
-    && cd klipper \
-    && cp /usr/src/simulavr.config .config \
+RUN cd /build/klipper \
     && make \
-    && cp out/klipper.elf /build/simulavr.elf \
+    && mkdir -p /build/klipper_out \
+    && cp out/klipper.elf /build/klipper_out \
+    && cp out/klipper.dict /build/klipper_out \
     && rm -f .config \
-    && make clean \
-    # Build simulavr
-    && cd ../simulavr \
-    && make python \
-    && make build \
     && make clean
+
+#### Simulavr
+RUN git clone -b master https://git.savannah.nongnu.org/git/simulavr.git \
+    # Build simulavr
+    && cd simulavr \
+    && make python \
+    && make build
 
 #### Moonraker
 RUN git clone https://github.com/Arksine/moonraker \
@@ -125,7 +118,7 @@ COPY --from=builder --chown=printer:printer /build/moonraker ./moonraker
 COPY --from=builder --chown=printer:printer /build/moonraker-env ./moonraker-env
 COPY --from=builder --chown=printer:printer /build/moonraker-timelapse ./moonraker-timelapse
 COPY --from=builder --chown=printer:printer /build/simulavr ./simulavr
-COPY --from=builder --chown=printer:printer /build/simulavr.elf ./simulavr.elf
+COPY --from=builder --chown=printer:printer /build/klipper_out/ ./klipper/out/
 COPY --from=builder --chown=printer:printer /build/mjpg-streamer/mjpg-streamer-experimental ./mjpg-streamer
 
 # Copy example configs and dummy streamer images
