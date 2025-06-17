@@ -13,6 +13,9 @@ services:
       - "8110:8080"
     networks:
       - dev_net
+    tmpfs:
+      - /tmp:noexec,mode=1777
+      - /home/printer/printer_data/comms:noexec,uid=1000,gid=1000,mode=0755
 networks:
   dev_net:
     driver: bridge
