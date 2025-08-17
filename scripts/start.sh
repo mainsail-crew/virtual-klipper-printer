@@ -14,6 +14,7 @@ set -e
 
 REQUIRED_FOLDERS=(
   "${HOME}/printer_data"
+  "${HOME}/printer_data/comms"
   "${HOME}/printer_data/config"
   "${HOME}/printer_data/logs"
   "${HOME}/printer_data/gcodes"
@@ -27,7 +28,7 @@ function status_msg() {
 }
 
 ######
-# Test if all requierd folders exist if not create them and
+# Test if all required folders exist if not create them and
 # test for correct ownership of all required folders
 ###
 function check_folder_perms_and_create() {
