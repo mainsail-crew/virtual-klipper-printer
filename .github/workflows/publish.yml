@@ -16,6 +16,30 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  get-klipper-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+            repository: klipper3d/klipper
+            ref: master
+            fetch-depth: 0
+            fetch-tags: true
+
+      - name: Get Klipper version
+        id: get_version
+        run: |
+          git fetch --tags --force
+          LAST_TAG=$(git describe --tags --abbrev=0 --match "v[0-9]*")
+          COUNT=$(git rev-list --count "${LAST_TAG}..HEAD")
+          echo "Last tag: $LAST_TAG, commits since: $COUNT"
+          VERSION="${LAST_TAG}-${COUNT}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
   build-and-push-image:
     runs-on: ubuntu-latest
     permissions:
