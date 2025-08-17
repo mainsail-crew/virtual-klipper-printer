@@ -40,7 +40,7 @@ RUN cd /build/klipper \
 
 #### Simulavr
 RUN git clone -b master https://git.savannah.nongnu.org/git/simulavr.git \
-    # Build simulavr
+    # Build simulavr \
     && cd simulavr \
     && make python \
     && make build
@@ -70,22 +70,19 @@ FROM python:3.12-slim-bookworm AS runner
 RUN apt-get update && apt-get install -y \
     --no-install-recommends \
     --no-install-suggests \
-    ### non-specific packages
+    ### non-specific packages \
     git \
     supervisor \
     sudo \
-    ### moonraker
-    curl \
-    iproute2 \
-    libcurl4-openssl-dev \
-    liblmdb-dev \
+    ### moonraker \
     libopenjp2-7 \
     libsodium-dev \
-    libssl-dev \
     zlib1g-dev \
     libjpeg-dev \
-    packagekit \
-    ### clean up
+    curl \
+    ### klipper c_helper.so dependencies \
+    gcc \
+    ### clean up \
     && apt-get -y autoremove \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* 
