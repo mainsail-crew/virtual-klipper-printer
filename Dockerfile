@@ -3,16 +3,16 @@ FROM python:3.12-slim-bookworm AS builder
 RUN apt-get update && apt-get install -y \
     --no-install-recommends \
     --no-install-suggests \
-    ### non-specific packages
+    ### non-specific packages \
     git swig virtualenv \
-    ### klipper
+    ### klipper \
     avr-libc binutils-avr build-essential cmake gcc-avr libcurl4-openssl-dev \
     libssl-dev libffi-dev python3-dev python3-libgpiod python3-distutils \
-    ### simulavr
+    ### simulavr \
     g++ make rst2pdf help2man texinfo \
     ### \
     && pip install setuptools \
-    ### clean up
+    ### clean up \
     && apt-get -y autoremove \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* 
