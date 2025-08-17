@@ -6,7 +6,7 @@
 # delete pycache (*.pyc files)
 find "/home/printer/" -name "__pycache__" -type d -exec rm -rf {} +
 
-venvs=(klippy-env moonraker-env)
+venvs=(python-env)
 
 for venv in "${venvs[@]}"; do
     # repair shebangs

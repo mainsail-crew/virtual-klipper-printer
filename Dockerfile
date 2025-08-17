@@ -24,8 +24,8 @@ WORKDIR /build
 ARG KLIPPER_REPO=https://github.com/Klipper3d/klipper.git
 ENV KLIPPER_REPO=${KLIPPER_REPO}
 RUN git clone --depth 1 ${KLIPPER_REPO} klipper \
-    && virtualenv -p python3 /build/klippy-env \
-    && /build/klippy-env/bin/pip install --no-cache-dir -r /build/klipper/scripts/klippy-requirements.txt
+    && virtualenv -p python3 /build/python-env \
+    && /build/python-env/bin/pip install --no-cache-dir -r /build/klipper/scripts/klippy-requirements.txt
 
 #### Build Firmware
 COPY config/simulavr.config /build/klipper/.config
@@ -47,8 +47,7 @@ RUN git clone -b master https://git.savannah.nongnu.org/git/simulavr.git \
 
 #### Moonraker
 RUN git clone --depth 1 https://github.com/Arksine/moonraker \
-    && virtualenv -p python3 /build/moonraker-env \
-    && /build/moonraker-env/bin/pip install --no-cache-dir -r /build/moonraker/scripts/moonraker-requirements.txt
+    && /build/python-env/bin/pip install --no-cache-dir -r /build/moonraker/scripts/moonraker-requirements.txt
 
 #### Moonraker Timelapse
 RUN git clone https://github.com/mainsail-crew/moonraker-timelapse
@@ -107,10 +106,9 @@ USER printer
 WORKDIR /home/printer
 
 # Copy our prebuilt applications from the builder stage
-COPY --from=builder --chown=printer:printer /build/klippy-env ./klippy-env
+COPY --from=builder --chown=printer:printer /build/python-env ./python-env
 COPY --from=builder --chown=printer:printer /build/klipper/ ./klipper/
 COPY --from=builder --chown=printer:printer /build/moonraker ./moonraker
-COPY --from=builder --chown=printer:printer /build/moonraker-env ./moonraker-env
 COPY --from=builder --chown=printer:printer /build/moonraker-timelapse ./moonraker-timelapse
 COPY --from=builder --chown=printer:printer /build/simulavr ./simulavr
 COPY --from=builder --chown=printer:printer /build/klipper_out/ ./klipper/out/
