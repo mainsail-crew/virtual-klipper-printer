@@ -23,9 +23,9 @@ WORKDIR /build
 #### Klipper
 ARG KLIPPER_REPO=https://github.com/Klipper3d/klipper.git
 ENV KLIPPER_REPO=${KLIPPER_REPO}
-RUN git clone ${KLIPPER_REPO} klipper \
+RUN git clone --depth 1 ${KLIPPER_REPO} klipper \
     && virtualenv -p python3 /build/klippy-env \
-    && /build/klippy-env/bin/pip install -r /build/klipper/scripts/klippy-requirements.txt
+    && /build/klippy-env/bin/pip install --no-cache-dir -r /build/klipper/scripts/klippy-requirements.txt
 
 #### Build Firmware
 COPY config/simulavr.config /build/klipper/.config
@@ -46,9 +46,9 @@ RUN git clone -b master https://git.savannah.nongnu.org/git/simulavr.git \
     && make build
 
 #### Moonraker
-RUN git clone https://github.com/Arksine/moonraker \
+RUN git clone --depth 1 https://github.com/Arksine/moonraker \
     && virtualenv -p python3 /build/moonraker-env \
-    && /build/moonraker-env/bin/pip install -r /build/moonraker/scripts/moonraker-requirements.txt
+    && /build/moonraker-env/bin/pip install --no-cache-dir -r /build/moonraker/scripts/moonraker-requirements.txt
 
 #### Moonraker Timelapse
 RUN git clone https://github.com/mainsail-crew/moonraker-timelapse
@@ -72,7 +72,6 @@ RUN apt-get update && apt-get install -y \
     --no-install-suggests \
     ### non-specific packages
     git \
-    build-essential \
     supervisor \
     sudo \
     ### moonraker
@@ -86,7 +85,6 @@ RUN apt-get update && apt-get install -y \
     zlib1g-dev \
     libjpeg-dev \
     packagekit \
-    wireless-tools \
     ### clean up
     && apt-get -y autoremove \
     && apt-get clean \
