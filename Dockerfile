@@ -3,16 +3,16 @@ FROM python:3.12-slim-bookworm AS builder
 RUN apt-get update && apt-get install -y \
     --no-install-recommends \
     --no-install-suggests \
-    ### non-specific packages
+    ### non-specific packages \
     git swig virtualenv \
-    ### klipper
+    ### klipper \
     avr-libc binutils-avr build-essential cmake gcc-avr libcurl4-openssl-dev \
     libssl-dev libffi-dev python3-dev python3-libgpiod python3-distutils \
-    ### simulavr
+    ### simulavr \
     g++ make rst2pdf help2man texinfo \
     ### \
     && pip install setuptools \
-    ### clean up
+    ### clean up \
     && apt-get -y autoremove \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* 
@@ -23,9 +23,9 @@ WORKDIR /build
 #### Klipper
 ARG KLIPPER_REPO=https://github.com/Klipper3d/klipper.git
 ENV KLIPPER_REPO=${KLIPPER_REPO}
-RUN git clone ${KLIPPER_REPO} klipper \
-    && virtualenv -p python3 /build/klippy-env \
-    && /build/klippy-env/bin/pip install -r /build/klipper/scripts/klippy-requirements.txt
+RUN git clone --depth 1 ${KLIPPER_REPO} klipper \
+    && virtualenv -p python3 /build/python-env \
+    && /build/python-env/bin/pip install --no-cache-dir -r /build/klipper/scripts/klippy-requirements.txt
 
 #### Build Firmware
 COPY config/simulavr.config /build/klipper/.config
@@ -40,15 +40,14 @@ RUN cd /build/klipper \
 
 #### Simulavr
 RUN git clone -b master https://git.savannah.nongnu.org/git/simulavr.git \
-    # Build simulavr
+    # Build simulavr \
     && cd simulavr \
     && make python \
     && make build
 
 #### Moonraker
-RUN git clone https://github.com/Arksine/moonraker \
-    && virtualenv -p python3 /build/moonraker-env \
-    && /build/moonraker-env/bin/pip install -r /build/moonraker/scripts/moonraker-requirements.txt
+RUN git clone --depth 1 https://github.com/Arksine/moonraker \
+    && /build/python-env/bin/pip install --no-cache-dir -r /build/moonraker/scripts/moonraker-requirements.txt
 
 #### Moonraker Timelapse
 RUN git clone https://github.com/mainsail-crew/moonraker-timelapse
@@ -70,24 +69,19 @@ FROM python:3.12-slim-bookworm AS runner
 RUN apt-get update && apt-get install -y \
     --no-install-recommends \
     --no-install-suggests \
-    ### non-specific packages
+    ### non-specific packages \
     git \
-    build-essential \
     supervisor \
     sudo \
-    ### moonraker
-    curl \
-    iproute2 \
-    libcurl4-openssl-dev \
-    liblmdb-dev \
+    ### moonraker \
     libopenjp2-7 \
     libsodium-dev \
-    libssl-dev \
     zlib1g-dev \
     libjpeg-dev \
-    packagekit \
-    wireless-tools \
-    ### clean up
+    curl \
+    ### klipper c_helper.so dependencies \
+    gcc \
+    ### clean up \
     && apt-get -y autoremove \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* 
@@ -112,10 +106,9 @@ USER printer
 WORKDIR /home/printer
 
 # Copy our prebuilt applications from the builder stage
-COPY --from=builder --chown=printer:printer /build/klippy-env ./klippy-env
+COPY --from=builder --chown=printer:printer /build/python-env ./python-env
 COPY --from=builder --chown=printer:printer /build/klipper/ ./klipper/
 COPY --from=builder --chown=printer:printer /build/moonraker ./moonraker
-COPY --from=builder --chown=printer:printer /build/moonraker-env ./moonraker-env
 COPY --from=builder --chown=printer:printer /build/moonraker-timelapse ./moonraker-timelapse
 COPY --from=builder --chown=printer:printer /build/simulavr ./simulavr
 COPY --from=builder --chown=printer:printer /build/klipper_out/ ./klipper/out/
