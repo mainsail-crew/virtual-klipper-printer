@@ -1,0 +1,7 @@
+services:
+  printer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        KLIPPER_REPO: ${KLIPPER_REPO:-https://github.com/Klipper3d/klipper.git}
