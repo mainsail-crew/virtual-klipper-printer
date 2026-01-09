@@ -35,7 +35,7 @@ This is useful if you want to customize the image or if you prefer to build it
 yourself. It's possible to change the Klipper Repo URL with this method. 
 
 1. Clone this repository
-2. Rename the `docker-compose.build.yml` file to `docker-compose.override.yml`
+2. Copy `docker-compose.build.yml` to `docker-compose.override.yml`.
 3. Edit the `docker-compose.override.yml` file to change the `KLIPPER_REPO_URL`
    variable to your desired Klipper repository URL (default is the official
    Klipper repository)
