@@ -79,6 +79,7 @@ RUN apt-get update && apt-get install -y \
     zlib1g-dev \
     libjpeg-dev \
     curl \
+    iproute2 \
     ### klipper c_helper.so dependencies \
     gcc \
     ### clean up \
