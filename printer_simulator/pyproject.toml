@@ -1,0 +1,19 @@
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["printer_hardware"]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+warn_return_any = true
+warn_unused_configs = true
+check_untyped_defs = true
+show_error_codes = true
+pretty = true

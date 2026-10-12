@@ -79,7 +79,7 @@ list-units)
 start | stop | restart)
   for UNIT in "${UNITS[@]}"; do
     if [ "$UNIT" = "klipper" ]; then
-      sudo /usr/bin/supervisorctl "$COMMAND" simulavr klipper
+      sudo /usr/bin/supervisorctl "$COMMAND" printer_simulator webcam_renderer klipper_mcu klipper_klippy
     else
       sudo /usr/bin/supervisorctl "$COMMAND" "$UNIT"
     fi
