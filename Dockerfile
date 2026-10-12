@@ -94,10 +94,12 @@ RUN groupadd --force -g 1000 printer \
 COPY config/supervisord.conf /etc/supervisor/supervisord.conf
 COPY scripts/start.sh /bin/start
 COPY scripts/service_control.sh /bin/service_control
+COPY scripts/start_mcu.sh /bin/start_mcu
 
 ### make entrypoint executable
 RUN chmod +x /bin/start
 RUN chmod +x /bin/service_control
+RUN chmod +x /bin/start_mcu
 
 USER printer
 WORKDIR /home/printer
