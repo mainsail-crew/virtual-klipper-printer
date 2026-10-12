@@ -98,36 +98,56 @@ static int make_dummy_fd(void) {
 // Socket Communication
 // ─────────────────────────────────────────────────────────
 
-static int socket_request(const char *request, char *response, size_t resp_size) {
-    /*
-    establishes a connection to the Python socket server and sends a request, then waits for a response.
-    */
+static int hw_debug(void) {
+    static int dbg = -1;
+    if (dbg < 0) dbg = getenv("FAKE_HW_DEBUG") != NULL;
+    return dbg;
+}
+
+// Persistent connection to the Python server: one socket for all requests instead of one
+// connection (and one Python thread) per GPIO toggle, which was too slow for step pulses.
+static int hw_sock = -1;
+
+static int hw_connect(void) {
+    if (hw_sock >= 0) return hw_sock;
     const char *socket_path = getenv(SOCKET_PATH_ENV);
     if (!socket_path) return -1;
-
     int sock = socket(AF_UNIX, SOCK_STREAM, 0);
     if (sock < 0) return -1;
-
     struct sockaddr_un addr = {0};
     addr.sun_family = AF_UNIX;
     strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path) - 1);
-
     if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
         close(sock);
         return -1;
     }
-
-    // Set timeout to prevent Klipper from blocking if Python doesn't respond
     struct timeval tv = { .tv_sec = 0, .tv_usec = SOCKET_TIMEOUT_MS * 1000 };
     setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+    hw_sock = sock;
+    return hw_sock;
+}
 
-    send(sock, request, strlen(request), 0);
+static int hw_send(const char *msg) {
+    for (int attempt = 0; attempt < 2; attempt++) {
+        int sock = hw_connect();
+        if (sock < 0) return -1;
+        if (send(sock, msg, strlen(msg), MSG_NOSIGNAL) == (ssize_t)strlen(msg)) return sock;
+        close(sock);
+        hw_sock = -1;
+    }
+    return -1;
+}
 
-    ssize_t n = recv(sock, response, resp_size - 1, 0);
-    if (n > 0) response[n] = '\0';
-    else response[0] = '\0';
-
-    close(sock);
+static int hw_readline(int sock, char *response, size_t resp_size) {
+    size_t n = 0;
+    while (n < resp_size - 1) {
+        char c;
+        ssize_t r = recv(sock, &c, 1, 0);
+        if (r <= 0) { close(sock); hw_sock = -1; break; }
+        if (c == '\n') break;
+        response[n++] = c;
+    }
+    response[n] = '\0';
     return n > 0 ? 0 : -1;
 }
 
@@ -136,7 +156,8 @@ static int read_value(const char *key, int fallback) {
     char request[64], response[32];
     snprintf(request, sizeof(request), "GET %s\n", key);
 
-    if (socket_request(request, response, sizeof(response)) < 0)
+    int sock = hw_send(request);
+    if (sock < 0 || hw_readline(sock, response, sizeof(response)) < 0)
         return fallback;
 
     return atoi(response);
@@ -145,8 +166,10 @@ static int read_value(const char *key, int fallback) {
 static void write_value(const char *key, int value) {
     // Send a request to the Python socket server to write a value (for GPIO).
     char request[64], response[32];
-    snprintf(request, sizeof(request), "SET %s %d\n", key, value);
-    socket_request(request, response, sizeof(response));
+    (void)response;
+    // fire-and-forget: the server does not answer SETQ, the MCU does not wait
+    snprintf(request, sizeof(request), "SETQ %s %d\n", key, value);
+    hw_send(request);
 }
 
 
@@ -176,7 +199,7 @@ int open(const char *path, int flags, ...) {
         FakeFd *f = alloc_fake_fd(fd, FD_ADC);
         if (!f) { real_close(fd); errno = ENOMEM; return -1; }
         f->channel = channel;
-        fprintf(stderr, "[fake_hw] open ADC channel %d -> fd %d\n", channel, fd);
+        if (hw_debug()) fprintf(stderr, "[fake_hw] open ADC channel %d -> fd %d\n", channel, fd);
         return fd;
     }
 
@@ -189,7 +212,7 @@ int open(const char *path, int flags, ...) {
         FakeFd *f = alloc_fake_fd(fd, FD_GPIO_CHIP);
         if (!f) { real_close(fd); errno = ENOMEM; return -1; }
         f->chip = chip;
-        fprintf(stderr, "[fake_hw] open gpiochip%d -> fd %d\n", chip, fd);
+        if (hw_debug()) fprintf(stderr, "[fake_hw] open gpiochip%d -> fd %d\n", chip, fd);
         return fd;
     }
 
@@ -214,7 +237,7 @@ int open64(const char *path, int flags, ...) {
 int access(const char *path, int mode) {
     init_real_funcs();
     if (strstr(path, "/dev/gpiochip")) {
-        fprintf(stderr, "[fake_hw] access(%s) -> OK\n", path);
+        if (hw_debug()) fprintf(stderr, "[fake_hw] access(%s) -> OK\n", path);
         return 0;
     }
     return real_access(path, mode);
@@ -237,7 +260,7 @@ ssize_t pread(int fd, void *buf, size_t count, off_t offset) {
         if (offset >= len) return 0;
         size_t n = (size_t)(len - offset) < count ? (size_t)(len - offset) : count;
         memcpy(buf, tmp + offset, n);
-        fprintf(stderr, "[fake_hw] pread ADC channel %d = %d\n", f->channel, value);
+        if (hw_debug()) fprintf(stderr, "[fake_hw] pread ADC channel %d = %d\n", f->channel, value);
         return (ssize_t)n;
     }
     return real_pread(fd, buf, count, offset);
@@ -264,7 +287,7 @@ int ioctl(int fd, unsigned long request, ...) {
         snprintf(info->name,  sizeof(info->name),  "gpiochip%d", f->chip);
         snprintf(info->label, sizeof(info->label), "fake-gpio%d", f->chip);
         info->lines = 64;
-        fprintf(stderr, "[fake_hw] ioctl CHIPINFO chip%d\n", f->chip);
+        if (hw_debug()) fprintf(stderr, "[fake_hw] ioctl CHIPINFO chip%d\n", f->chip);
         return 0;
     }
 
@@ -289,7 +312,7 @@ int ioctl(int fd, unsigned long request, ...) {
         for (int i = 0; i < (int)req->lines && i < GPIOHANDLES_MAX; i++)
             lf->line_offsets[i] = req->lineoffsets[i];
         req->fd = line_fd;
-        fprintf(stderr, "[fake_hw] ioctl GET_LINEHANDLE lines=%d -> fd %d\n",
+        if (hw_debug()) fprintf(stderr, "[fake_hw] ioctl GET_LINEHANDLE lines=%d -> fd %d\n",
                 req->lines, line_fd);
         return 0;
     }
@@ -302,7 +325,7 @@ int ioctl(int fd, unsigned long request, ...) {
             char key[32];
             snprintf(key, sizeof(key), "chip%d_gpio%d", f->chip, f->line_offsets[i]);
             data->values[i] = read_value(key, 0) ? 1 : 0;
-            fprintf(stderr, "[fake_hw] ioctl GET %s = %d\n", key, data->values[i]);
+            if (hw_debug()) fprintf(stderr, "[fake_hw] ioctl GET %s = %d\n", key, data->values[i]);
         }
         return 0;
     }
@@ -313,7 +336,7 @@ int ioctl(int fd, unsigned long request, ...) {
         for (int i = 0; i < f->num_lines && i < GPIOHANDLES_MAX; i++) {
             char key[32];
             snprintf(key, sizeof(key), "chip%d_gpio%d", f->chip, f->line_offsets[i]);
-            fprintf(stderr, "[fake_hw] ioctl SET %s = %d\n", key, data->values[i]);
+            if (hw_debug()) fprintf(stderr, "[fake_hw] ioctl SET %s = %d\n", key, data->values[i]);
             write_value(key, data->values[i]);
         }
         return 0;

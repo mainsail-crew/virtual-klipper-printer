@@ -71,25 +71,25 @@ class FakeHardwareServer:
             return 0
 
     def _handle_client(self, conn):
+        """Serve one connection; the hook keeps it open and sends one command per line.
+
+        GET answers with the value, SET with OK, SETQ (quiet set, used for step pulses) not at all."""
         try:
-            data = conn.recv(64).decode().strip()
-            parts = data.split()
-
-            if parts[0] == "GET" and len(parts) == 2:
-                value = self.get(parts[1])
-                conn.send(f"{value}\n".encode())
-
-            elif parts[0] == "SET" and len(parts) == 3:
-                key, value = parts[1], int(parts[2])
-                self.set(key, value)
-                conn.send(b"OK\n")
-
-            else:
-                conn.send(b"ERR malformed command\n")
+            with conn, conn.makefile("rb") as lines:
+                for raw in lines:
+                    parts = raw.decode().split()
+                    if not parts:
+                        continue
+                    if parts[0] == "GET" and len(parts) == 2:
+                        conn.sendall(f"{self.get(parts[1])}\n".encode())
+                    elif parts[0] in ("SET", "SETQ") and len(parts) == 3:
+                        self.set(parts[1], int(parts[2]))
+                        if parts[0] == "SET":
+                            conn.sendall(b"OK\n")
+                    else:
+                        conn.sendall(b"ERR malformed command\n")
         except Exception as e:
             print(f"[server] error: {e}")
-        finally:
-            conn.close()
 
     def run(self):
         if os.path.exists(self.socket_path):
