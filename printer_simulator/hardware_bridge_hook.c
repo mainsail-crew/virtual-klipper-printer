@@ -20,6 +20,7 @@
 #include <sys/ioctl.h>
 #include <linux/gpio.h>
 
+#include <sys/mman.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #define MAX_FAKE_FDS 128
@@ -102,6 +103,21 @@ static int hw_debug(void) {
     static int dbg = -1;
     if (dbg < 0) dbg = getenv("FAKE_HW_DEBUG") != NULL;
     return dbg;
+}
+
+// Pin the MCU process in memory. "klipper.elf -r" would do this itself (mlockall together with
+// SCHED_FIFO), but it exits on EPERM as user "printer", so scripts/start_mcu.sh only sets the
+// priority with chrt. Without mlockall, pages of the idle MCU can be swapped out or reclaimed;
+// the page fault on the next step then stalls the MCU for milliseconds and it shuts down with
+// "Stepper too far in past". Needs a large enough memlock limit (docker-compose.yml: ulimits).
+__attribute__((constructor))
+static void hw_lock_memory(void) {
+    if (mlockall(MCL_CURRENT | MCL_FUTURE) == 0) {
+        fprintf(stderr, "[fake_hw] MCU memory locked (mlockall)\n");
+        return;
+    }
+    fprintf(stderr, "[fake_hw] mlockall failed: %s (raise the memlock ulimit, see docker-compose.yml)\n",
+            strerror(errno));
 }
 
 // Persistent connection to the Python server: one socket for all requests instead of one
