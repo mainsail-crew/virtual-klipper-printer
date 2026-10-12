@@ -107,6 +107,7 @@ static int hw_debug(void) {
 // Persistent connection to the Python server: one socket for all requests instead of one
 // connection (and one Python thread) per GPIO toggle, which was too slow for step pulses.
 static int hw_sock = -1;
+static void hw_reset_connection(void);
 
 static int hw_connect(void) {
     if (hw_sock >= 0) return hw_sock;
@@ -132,44 +133,94 @@ static int hw_send(const char *msg) {
         int sock = hw_connect();
         if (sock < 0) return -1;
         if (send(sock, msg, strlen(msg), MSG_NOSIGNAL) == (ssize_t)strlen(msg)) return sock;
-        close(sock);
-        hw_sock = -1;
+        hw_reset_connection();
     }
     return -1;
 }
 
-static int hw_readline(int sock, char *response, size_t resp_size) {
-    size_t n = 0;
-    while (n < resp_size - 1) {
-        char c;
-        ssize_t r = recv(sock, &c, 1, 0);
-        if (r <= 0) { close(sock); hw_sock = -1; break; }
-        if (c == '\n') break;
-        response[n++] = c;
+// Input values (endstops, ADC, sensors) are cached in the hook. The first read of a key
+// subscribes to it ("SUB key"); from then on the server pushes "VAL key value" whenever the
+// value changes. Reads never wait for Python, so the MCU's step timers are never delayed.
+#define MAX_CACHED 64
+static struct { char key[32]; int value; } hw_cache[MAX_CACHED];
+static int hw_cache_len = 0;
+static char hw_rbuf[8192];
+static size_t hw_rlen = 0;
+
+static int cache_find(const char *key) {
+    for (int i = 0; i < hw_cache_len; i++)
+        if (strcmp(hw_cache[i].key, key) == 0) return i;
+    return -1;
+}
+
+static void cache_store(const char *key, int value) {
+    int i = cache_find(key);
+    if (i < 0) {
+        if (hw_cache_len >= MAX_CACHED) return;
+        i = hw_cache_len++;
+        snprintf(hw_cache[i].key, sizeof(hw_cache[i].key), "%s", key);
     }
-    response[n] = '\0';
-    return n > 0 ? 0 : -1;
+    hw_cache[i].value = value;
+}
+
+static void hw_reset_connection(void) {
+    if (hw_sock >= 0) close(hw_sock);
+    hw_sock = -1;
+    hw_rlen = 0;
+    hw_cache_len = 0;  // resubscribe after a reconnect
+}
+
+// Read whatever the server has pushed and update the cache. With wait_ms > 0 block up to that
+// long for the first data (only used for the initial subscription of a key).
+static void hw_poll(int wait_ms) {
+    int sock = hw_connect();
+    if (sock < 0) return;
+    for (;;) {
+        int flags = MSG_DONTWAIT;
+        if (wait_ms > 0) {
+            struct timeval tv = { .tv_sec = wait_ms / 1000, .tv_usec = (wait_ms % 1000) * 1000 };
+            setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+            flags = 0;
+        }
+        if (hw_rlen >= sizeof(hw_rbuf) - 1) hw_rlen = 0;  // overlong garbage, drop it
+        ssize_t r = recv(sock, hw_rbuf + hw_rlen, sizeof(hw_rbuf) - 1 - hw_rlen, flags);
+        if (r == 0) { hw_reset_connection(); return; }
+        if (r < 0) return;  // nothing (more) to read right now
+        hw_rlen += (size_t)r;
+        size_t start = 0;
+        for (size_t i = 0; i < hw_rlen; i++) {
+            if (hw_rbuf[i] != '\n') continue;
+            hw_rbuf[i] = '\0';
+            char key[32];
+            int value;
+            if (sscanf(hw_rbuf + start, "VAL %31s %d", key, &value) == 2) cache_store(key, value);
+            start = i + 1;
+        }
+        memmove(hw_rbuf, hw_rbuf + start, hw_rlen - start);
+        hw_rlen -= start;
+        if (wait_ms > 0) return;
+    }
 }
 
 static int read_value(const char *key, int fallback) {
-    // Send a request to the Python socket server to read a value (ADC or GPIO) and return it as an integer.
-    char request[64], response[32];
-    snprintf(request, sizeof(request), "GET %s\n", key);
-
-    int sock = hw_send(request);
-    if (sock < 0 || hw_readline(sock, response, sizeof(response)) < 0)
-        return fallback;
-
-    return atoi(response);
+    hw_poll(0);
+    int i = cache_find(key);
+    if (i >= 0) return hw_cache[i].value;
+    // first read of this key: subscribe and wait for the initial value (only at startup)
+    char request[64];
+    snprintf(request, sizeof(request), "SUB %s\n", key);
+    if (hw_send(request) < 0) return fallback;
+    for (int attempt = 0; attempt < 20 && (i = cache_find(key)) < 0; attempt++)
+        hw_poll(SOCKET_TIMEOUT_MS);
+    return i >= 0 ? hw_cache[i].value : fallback;
 }
 
 static void write_value(const char *key, int value) {
-    // Send a request to the Python socket server to write a value (for GPIO).
-    char request[64], response[32];
-    (void)response;
     // fire-and-forget: the server does not answer SETQ, the MCU does not wait
+    char request[64];
     snprintf(request, sizeof(request), "SETQ %s %d\n", key, value);
     hw_send(request);
+    hw_poll(0);  // keep pushed values flowing so the server never blocks on a full socket
 }
 
 

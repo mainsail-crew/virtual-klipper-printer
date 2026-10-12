@@ -73,7 +73,33 @@ class FakeHardwareServer:
     def _handle_client(self, conn):
         """Serve one connection; the hook keeps it open and sends one command per line.
 
-        GET answers with the value, SET with OK, SETQ (quiet set, used for step pulses) not at all."""
+        GET answers with the value, SET with OK, SETQ (quiet set, used for step pulses) not at all.
+        SUB subscribes to a readable key: its value is sent at once as "VAL key value" and then
+        again whenever it changes (after writes and by a periodic check for time-based values
+        such as temperatures). The hook answers reads from these pushed values without waiting.
+        """
+        subscribed: dict[str, int] = {}
+        send_lock = threading.Lock()
+        alive = threading.Event()
+        alive.set()
+
+        def push_changes() -> None:
+            for key, last in list(subscribed.items()):
+                value = self.get(key)
+                if value != last:
+                    subscribed[key] = value
+                    with send_lock:
+                        conn.sendall(f"VAL {key} {value}\n".encode())
+
+        def periodic() -> None:
+            while alive.is_set():
+                time.sleep(0.05)
+                try:
+                    push_changes()
+                except OSError:
+                    return
+
+        threading.Thread(target=periodic, daemon=True).start()
         try:
             with conn, conn.makefile("rb") as lines:
                 for raw in lines:
@@ -81,15 +107,27 @@ class FakeHardwareServer:
                     if not parts:
                         continue
                     if parts[0] == "GET" and len(parts) == 2:
-                        conn.sendall(f"{self.get(parts[1])}\n".encode())
+                        with send_lock:
+                            conn.sendall(f"{self.get(parts[1])}\n".encode())
+                    elif parts[0] == "SUB" and len(parts) == 2:
+                        value = self.get(parts[1])
+                        subscribed[parts[1]] = value
+                        with send_lock:
+                            conn.sendall(f"VAL {parts[1]} {value}\n".encode())
                     elif parts[0] in ("SET", "SETQ") and len(parts) == 3:
                         self.set(parts[1], int(parts[2]))
                         if parts[0] == "SET":
-                            conn.sendall(b"OK\n")
+                            with send_lock:
+                                conn.sendall(b"OK\n")
+                        if subscribed:
+                            push_changes()
                     else:
-                        conn.sendall(b"ERR malformed command\n")
+                        with send_lock:
+                            conn.sendall(b"ERR malformed command\n")
         except Exception as e:
             print(f"[server] error: {e}")
+        finally:
+            alive.clear()
 
     def run(self):
         if os.path.exists(self.socket_path):
