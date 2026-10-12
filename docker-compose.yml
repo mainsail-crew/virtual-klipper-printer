@@ -9,6 +9,8 @@ services:
       - "8110:8080"
     networks:
       - dev_net
+    cap_add:
+      - SYS_NICE   # realtime priority for the Linux MCU (see scripts/start_mcu.sh)
     tmpfs:
       - /tmp:noexec
       - /home/printer/printer_data/comms:noexec
