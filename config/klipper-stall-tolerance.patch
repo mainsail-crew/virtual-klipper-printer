@@ -1,0 +1,26 @@
+diff --git a/src/linux/timer.c b/src/linux/timer.c
+index 8eda62a..7a1a288 100644
+--- a/src/linux/timer.c
++++ b/src/linux/timer.c
+@@ -150,7 +150,7 @@ timer_dispatch(void)
+ 
+         if (unlikely(!repeat_count)) {
+             // Check if there are too many repeat timers
+-            if (diff < (int32_t)(-timer_from_us(100000)))
++            if (diff < (int32_t)(-timer_from_us(2000000)))
+                 try_shutdown("Rescheduled timer in the past");
+             if (sched_check_set_tasks_busy())
+                 return;
+diff --git a/src/stepper.c b/src/stepper.c
+index 948605d..52d8dcd 100644
+--- a/src/stepper.c
++++ b/src/stepper.c
+@@ -104,7 +104,7 @@ stepper_load_next(struct stepper *s)
+         if (was_active && timer_is_before(s->next_step_time, min_next_time)) {
+             // Actively stepping and next step event close to the last unstep
+             int32_t diff = s->next_step_time - min_next_time;
+-            if (diff < (int32_t)-timer_from_us(1000))
++            if (diff < (int32_t)-timer_from_us(500000))
+                 shutdown("Stepper too far in past");
+             s->time.waketime = min_next_time;
+         }

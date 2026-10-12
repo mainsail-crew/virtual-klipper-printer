@@ -28,8 +28,14 @@ RUN git clone --depth 1 ${KLIPPER_REPO} /home/printer/klipper \
 
 #### Build Firmware
 COPY config/linux.config /home/printer/klipper/.config
+# The simulator runs on ordinary hosts (laptops, containers, VMs) where the MCU process can be
+# held up for tens of milliseconds. The stock Linux MCU shuts down with "Stepper too far in
+# past" after a 1 ms delay; the patch widens the timing checks, see config/klipper-stall-tolerance.patch.
+COPY config/klipper-stall-tolerance.patch /home/printer/klipper/
     # Build the firmware
 RUN cd /home/printer/klipper \
+    && git apply klipper-stall-tolerance.patch \
+    && rm klipper-stall-tolerance.patch \
     && make \
     && mkdir -p /home/printer/klipper_out \
     && cp out/klipper.elf /home/printer/klipper_out \
