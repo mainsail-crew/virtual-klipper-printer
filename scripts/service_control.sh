@@ -50,7 +50,10 @@ UNITS=($@)
 case "$COMMAND" in
 show)
   for UNIT in "${UNITS[@]}"; do
-    UNIT_STATE=$(sudo /usr/bin/supervisorctl status "$UNIT" | awk '{print tolower($2)}')
+    PROGRAM="$UNIT"
+    # "klipper" is the whole Klipper stack (see list-units), its state is klippy's
+    [ "$UNIT" = "klipper" ] && PROGRAM="klipper_klippy"
+    UNIT_STATE=$(sudo /usr/bin/supervisorctl status "$PROGRAM" | awk '{print tolower($2)}')
 
     for PROPERTY in "${PROPERTIES[@]}"; do
       case "$PROPERTY" in
@@ -73,16 +76,29 @@ show)
   ;;
 
 list-units)
-  sudo /usr/bin/supervisorctl status | awk '{print $1".service\tloaded\t"(tolower($2)=="running"?"active\trunning":"inactive\tdead")"\t"$1" service"}'
+  STATUS="$(sudo /usr/bin/supervisorctl status)"
+  echo "$STATUS" | awk '{print $1".service\tloaded\t"(tolower($2)=="running"?"active\trunning":"inactive\tdead")"\t"$1" service"}'
+  # Moonraker and Mainsail restart Klipper as service "klipper"; there is no program of that
+  # name, start/stop/restart below map it to all Klipper programs of the active MCU_TYPE
+  echo "$STATUS" | awk '$1=="klipper_klippy" {print "klipper.service\tloaded\t"(tolower($2)=="running"?"active\trunning":"inactive\tdead")"\tklipper service"}'
   ;;
 
 start | stop | restart)
+  # Moonraker waits only 2 s for "systemctl start/stop/restart" and reports an error after
+  # that, while restarting the Klipper programs takes longer. Hand the action to supervisor
+  # in the background (detached, output to the supervisord log) and return at once.
   for UNIT in "${UNITS[@]}"; do
     if [ "$UNIT" = "klipper" ]; then
-      sudo /usr/bin/supervisorctl "$COMMAND" printer_simulator webcam_renderer klipper_mcu klipper_klippy
+      # the MCU programs depend on MCU_TYPE, see /bin/start
+      if grep -q "^\[program:simulavr\]" /etc/supervisor/conf.d/mcu.conf 2>/dev/null; then
+        PROGRAMS=(simulavr klipper_klippy)
+      else
+        PROGRAMS=(printer_simulator webcam_renderer klipper_mcu klipper_klippy)
+      fi
     else
-      sudo /usr/bin/supervisorctl "$COMMAND" "$UNIT"
+      PROGRAMS=("$UNIT")
     fi
+    setsid sudo /usr/bin/supervisorctl "$COMMAND" "${PROGRAMS[@]}" </dev/null >/dev/null 2>&1 &
   done
   ;;
 

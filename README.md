@@ -48,6 +48,45 @@ Alternatively you can execute `docker compose -f docker-compose.build.yml -f
 docker-compose.yml up -d --build`
 ---
 
+## Choosing the MCU (MCU_TYPE)
+The image contains two virtual MCUs. `MCU_TYPE` selects which one runs:
+
+| MCU_TYPE | What runs | MCU config |
+|---|---|---|
+| `linux` (default) | Klipper Linux MCU, hardware simulated by `printer_simulator`, rendered webcam image | `mcu_linux.cfg` |
+| `avr` | Klipper AVR firmware (atmega644p) in simulavr, static webcam image | `mcu_avr.cfg` |
+
+Set it in `docker-compose.yml`, in a `docker-compose.override.yml` or in an `.env`
+file next to `docker-compose.yml`:
+
+```
+MCU_TYPE=avr
+```
+
+Then recreate the container with `docker compose up -d`.
+
+The two MCUs use different pin names and serial ports. `mcu_<type>.cfg` holds
+the `[mcu]` section and pin aliases (`[board_pins]`) for that MCU, and the addons
+in `addons/` only use these aliases, so they work with both MCUs (see
+[PINS.md](./PINS.md)). `printer.cfg` includes one of the MCU configs:
+
+```
+[include mcu_linux.cfg]
+#[include mcu_avr.cfg]
+```
+
+On first start the example configs are copied into `printer_data/config` with the
+include for the selected `MCU_TYPE` active. When you switch `MCU_TYPE` later,
+switch this include in `printer.cfg` as well. The container log shows a warning
+if `printer.cfg` does not include the config of the selected MCU. Configs from
+older versions do not have these files yet; copy them from `~/example-configs/`
+inside the container.
+
+The AVR simulation is slow and tends to shut down with "Timer too close" during
+longer moves on common CPUs (see #43); it is meant for special tests.
+
+---
+
 ## Configure a Dummy-Webcam
 To configure a dummy-webcam, use the following URLs:
    * Stream: `http://localhost:8110/?action=stream`

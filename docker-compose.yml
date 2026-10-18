@@ -2,6 +2,10 @@ services:
   printer:
     image: ghcr.io/mainsail-crew/virtual-klipper-printer:latest
     container_name: printer
+    environment:
+      # linux (default): Klipper Linux MCU + hardware simulator
+      # avr: Klipper AVR firmware in simulavr, e.g. for special tests
+      - MCU_TYPE=${MCU_TYPE:-linux}
     volumes:
       - ./printer_data:/home/printer/printer_data:delegated,Z
     ports:

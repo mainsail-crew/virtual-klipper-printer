@@ -9,6 +9,8 @@ RUN apt-get update && apt-get install -y \
     build-essential cmake libcurl4-openssl-dev \
     libssl-dev libffi-dev python3-dev python3-libgpiod python3-distutils \
     g++ make python3-wheel-whl \
+    ### klipper avr firmware and simulavr (MCU_TYPE=avr) \
+    avr-libc binutils-avr gcc-avr rst2pdf help2man texinfo \
     ### \
     && pip install setuptools \
     ### clean up \
@@ -27,21 +29,42 @@ RUN git clone --depth 1 ${KLIPPER_REPO} /home/printer/klipper \
     && /home/printer/python-env/bin/pip install --no-cache-dir -r /home/printer/klipper/scripts/klippy-requirements.txt
 
 #### Build Firmware
+# Two firmwares, selected at runtime with MCU_TYPE: the Linux MCU (default) and the AVR
+# firmware for simulavr. olddefconfig fills in options newer Klipper versions added.
+
+## Linux MCU
 COPY config/linux.config /home/printer/klipper/.config
 # The simulator runs on ordinary hosts (laptops, containers, VMs) where the MCU process can be
 # held up for tens of milliseconds. The stock Linux MCU shuts down with "Stepper too far in
 # past" after a 1 ms delay; the patch widens the timing checks, see config/klipper-stall-tolerance.patch.
+# It is only applied for the Linux MCU and reverted before the AVR build.
 COPY config/klipper-stall-tolerance.patch /home/printer/klipper/
-    # Build the firmware
 RUN cd /home/printer/klipper \
     && git apply klipper-stall-tolerance.patch \
-    && rm klipper-stall-tolerance.patch \
+    && make olddefconfig \
     && make \
     && mkdir -p /home/printer/klipper_out \
     && cp out/klipper.elf /home/printer/klipper_out \
     && cp out/klipper.dict /home/printer/klipper_out \
+    && git apply -R klipper-stall-tolerance.patch \
+    && rm -f .config klipper-stall-tolerance.patch \
+    && make clean
+
+## AVR MCU for simulavr
+COPY config/simulavr.config /home/printer/klipper/.config
+RUN cd /home/printer/klipper \
+    && make olddefconfig \
+    && make \
+    && cp out/klipper.elf /home/printer/klipper_out/klipper_avr.elf \
+    && cp out/klipper.dict /home/printer/klipper_out/klipper_avr.dict \
     && rm -f .config \
     && make clean
+
+#### Simulavr (MCU_TYPE=avr)
+RUN git clone -b master https://git.savannah.nongnu.org/git/simulavr.git /home/printer/simulavr \
+    && cd /home/printer/simulavr \
+    && make python \
+    && make build
 
 #### Moonraker
 RUN git clone --depth 1 https://github.com/Arksine/moonraker \
@@ -98,6 +121,7 @@ RUN groupadd --force -g 1000 printer \
 
 ### copy all required files
 COPY config/supervisord.conf /etc/supervisor/supervisord.conf
+COPY config/supervisor-mcu-linux.conf config/supervisor-mcu-avr.conf /etc/supervisor/
 COPY scripts/start.sh /bin/start
 COPY scripts/service_control.sh /bin/service_control
 COPY scripts/start_mcu.sh /bin/start_mcu
@@ -116,6 +140,7 @@ COPY --from=builder --chown=printer:printer /home/printer/klipper/ ./klipper/
 COPY --from=builder --chown=printer:printer /home/printer/moonraker ./moonraker
 COPY --from=builder --chown=printer:printer /home/printer/moonraker-timelapse ./moonraker-timelapse
 COPY --from=builder --chown=printer:printer /home/printer/klipper_out/ ./klipper/out/
+COPY --from=builder --chown=printer:printer /home/printer/simulavr ./simulavr
 COPY --from=builder --chown=printer:printer /home/printer/mjpg-streamer/mjpg-streamer-experimental ./mjpg-streamer
 COPY --from=builder --chown=printer:printer /home/printer/printer_simulator/ ./printer_simulator/
 
