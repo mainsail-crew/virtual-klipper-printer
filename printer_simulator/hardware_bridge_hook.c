@@ -128,14 +128,36 @@ static int hw_connect(void) {
     return hw_sock;
 }
 
-static int hw_send(const char *msg) {
-    for (int attempt = 0; attempt < 2; attempt++) {
-        int sock = hw_connect();
-        if (sock < 0) return -1;
-        if (send(sock, msg, strlen(msg), MSG_NOSIGNAL) == (ssize_t)strlen(msg)) return sock;
+// Outgoing messages are queued here and sent without ever blocking the MCU. A unix socket
+// accounts ~1 KB of kernel memory per small send, so its buffer holds only a few hundred
+// step messages; a short stall of the Python server then blocked send() and the MCU
+// missed its step times. The queue absorbs such stalls (1 MB = tens of thousands of steps).
+static char hw_wbuf[1 << 20];
+static size_t hw_wlen = 0;
+
+static void hw_flush(void) {
+    int sock = hw_connect();
+    if (sock < 0) return;
+    size_t off = 0;
+    while (off < hw_wlen) {
+        ssize_t n = send(sock, hw_wbuf + off, hw_wlen - off, MSG_NOSIGNAL | MSG_DONTWAIT);
+        if (n > 0) { off += (size_t)n; continue; }
+        if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)) break;
         hw_reset_connection();
+        return;
     }
-    return -1;
+    memmove(hw_wbuf, hw_wbuf + off, hw_wlen - off);
+    hw_wlen -= off;
+}
+
+static int hw_send(const char *msg) {
+    size_t len = strlen(msg);
+    if (hw_wlen + len > sizeof(hw_wbuf)) hw_flush();
+    if (hw_wlen + len > sizeof(hw_wbuf)) return -1;  // simulator far behind: drop the message
+    memcpy(hw_wbuf + hw_wlen, msg, len);
+    hw_wlen += len;
+    hw_flush();
+    return hw_sock;
 }
 
 // Input values (endstops, ADC, sensors) are cached in the hook. The first read of a key
@@ -167,12 +189,14 @@ static void hw_reset_connection(void) {
     if (hw_sock >= 0) close(hw_sock);
     hw_sock = -1;
     hw_rlen = 0;
+    hw_wlen = 0;
     hw_cache_len = 0;  // resubscribe after a reconnect
 }
 
 // Read whatever the server has pushed and update the cache. With wait_ms > 0 block up to that
 // long for the first data (only used for the initial subscription of a key).
 static void hw_poll(int wait_ms) {
+    if (hw_wlen) hw_flush();  // also drain queued messages when nothing new is written
     int sock = hw_connect();
     if (sock < 0) return;
     for (;;) {
@@ -210,8 +234,10 @@ static int read_value(const char *key, int fallback) {
     char request[64];
     snprintf(request, sizeof(request), "SUB %s\n", key);
     if (hw_send(request) < 0) return fallback;
-    for (int attempt = 0; attempt < 20 && (i = cache_find(key)) < 0; attempt++)
+    for (int attempt = 0; attempt < 20 && (i = cache_find(key)) < 0; attempt++) {
+        hw_flush();
         hw_poll(SOCKET_TIMEOUT_MS);
+    }
     return i >= 0 ? hw_cache[i].value : fallback;
 }
 
