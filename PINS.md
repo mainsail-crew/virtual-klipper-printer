@@ -2,6 +2,9 @@
 
 Documentation of pins and their usage in the virtual Klipper printer.
 
+This applies to `MCU_TYPE=linux` (the default). With `MCU_TYPE=avr` the configs in
+`example-configs-avr/` use the atmega644p pins of the simulavr setup instead.
+
 ## Pin Naming
 
 Klipper config uses pins like `gpiochipN/gpioM` and `analogX`.

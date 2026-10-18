@@ -23,8 +23,39 @@ REQUIRED_FOLDERS=(
   "${HOME}/printer_data/database"
 )
 
+# Which MCU the virtual printer runs: "linux" (Klipper Linux MCU + hardware simulator, default)
+# or "avr" (Klipper AVR firmware in simulavr). Set it in docker-compose.yml or an .env file.
+MCU_TYPE="${MCU_TYPE:-linux}"
+
 function status_msg() {
   echo "###[$(date +%T)]: ${1}"
+}
+
+######
+# Activate the supervisor programs for the selected MCU type
+###
+function select_mcu_type() {
+  case "${MCU_TYPE}" in
+    linux|avr) ;;
+    *)
+      status_msg "Unknown MCU_TYPE '${MCU_TYPE}', use 'linux' or 'avr'"
+      exit 1
+      ;;
+  esac
+  status_msg "MCU_TYPE=${MCU_TYPE}"
+  sudo mkdir -p /etc/supervisor/conf.d
+  sudo cp "/etc/supervisor/supervisor-mcu-${MCU_TYPE}.conf" /etc/supervisor/conf.d/mcu.conf
+}
+
+######
+# Example configs matching the MCU type (pin names and serial port differ)
+###
+function example_config_dir() {
+  if [[ ${MCU_TYPE} == "avr" ]]; then
+    echo "${HOME}/example-configs-avr"
+  else
+    echo "${HOME}/example-configs"
+  fi
 }
 
 ######
@@ -54,8 +85,21 @@ function copy_example_configs() {
   if [[ ! "$(ls -A "${HOME}/printer_data/config")" ]]; then
     status_msg "Directory ${HOME}/printer_data/config is empty!"
     status_msg "Copy example configs ..."
-    cp -R ~/example-configs/* ~/printer_data/config
+    cp -R "$(example_config_dir)"/* ~/printer_data/config
     status_msg "OK!"
+  fi
+}
+
+######
+# Warn if printer.cfg was made for the other MCU type (e.g. after switching MCU_TYPE)
+###
+function check_config_matches_mcu_type() {
+  local cfg="${HOME}/printer_data/config/printer.cfg"
+  local serial="/tmp/klipper_host_mcu"
+  [[ ${MCU_TYPE} == "avr" ]] && serial="/tmp/pseudoserial"
+  if [[ -f ${cfg} ]] && ! grep -q "^serial: *${serial}" "${cfg}"; then
+    status_msg "WARNING: printer.cfg does not use 'serial: ${serial}' for MCU_TYPE=${MCU_TYPE}."
+    status_msg "WARNING: It was probably made for the other MCU type, see $(example_config_dir)"
   fi
 }
 
@@ -99,7 +143,9 @@ function link_timelapse() {
 [[ ! -e /bin/systemctl ]] && sudo -S ln -s /bin/true /bin/systemctl
 
 check_folder_perms_and_create
+select_mcu_type
 copy_example_configs
+check_config_matches_mcu_type
 copy_dummy_images
 link_timelapse
 

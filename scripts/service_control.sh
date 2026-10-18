@@ -79,7 +79,12 @@ list-units)
 start | stop | restart)
   for UNIT in "${UNITS[@]}"; do
     if [ "$UNIT" = "klipper" ]; then
-      sudo /usr/bin/supervisorctl "$COMMAND" printer_simulator webcam_renderer klipper_mcu klipper_klippy
+      # the MCU programs depend on MCU_TYPE, see /bin/start
+      if grep -q "^\[program:simulavr\]" /etc/supervisor/conf.d/mcu.conf 2>/dev/null; then
+        sudo /usr/bin/supervisorctl "$COMMAND" simulavr klipper_klippy
+      else
+        sudo /usr/bin/supervisorctl "$COMMAND" printer_simulator webcam_renderer klipper_mcu klipper_klippy
+      fi
     else
       sudo /usr/bin/supervisorctl "$COMMAND" "$UNIT"
     fi

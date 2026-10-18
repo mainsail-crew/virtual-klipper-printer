@@ -48,6 +48,35 @@ Alternatively you can execute `docker compose -f docker-compose.build.yml -f
 docker-compose.yml up -d --build`
 ---
 
+## Choosing the MCU (MCU_TYPE)
+The image contains two virtual MCUs. `MCU_TYPE` selects which one runs:
+
+| MCU_TYPE | What runs | Example configs |
+|---|---|---|
+| `linux` (default) | Klipper Linux MCU, hardware simulated by `printer_simulator`, rendered webcam image | `example-configs/` (see [PINS.md](./PINS.md)) |
+| `avr` | Klipper AVR firmware (atmega644p) in simulavr, static webcam image | `example-configs-avr/` |
+
+Set it in `docker-compose.yml`, in a `docker-compose.override.yml` or in an `.env`
+file next to `docker-compose.yml`:
+
+```
+MCU_TYPE=avr
+```
+
+Then recreate the container with `docker compose up -d`.
+
+The two MCUs use different pin names and serial ports, so a `printer.cfg` only
+works with the MCU it was written for. On first start the matching example
+configs are copied into `printer_data/config`. When you switch `MCU_TYPE` later,
+replace your config with the files from the other example folder (inside the
+container: `~/example-configs/` or `~/example-configs-avr/`). The container log
+shows a warning if `printer.cfg` does not match the selected MCU.
+
+The AVR simulation is slow and tends to shut down with "Timer too close" during
+longer moves on common CPUs (see #43); it is meant for special tests.
+
+---
+
 ## Configure a Dummy-Webcam
 To configure a dummy-webcam, use the following URLs:
    * Stream: `http://localhost:8110/?action=stream`
