@@ -20,6 +20,8 @@
 #include <sys/ioctl.h>
 #include <linux/gpio.h>
 
+#include <sys/mman.h>
+#include <time.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #define MAX_FAKE_FDS 128
@@ -102,6 +104,36 @@ static int hw_debug(void) {
     static int dbg = -1;
     if (dbg < 0) dbg = getenv("FAKE_HW_DEBUG") != NULL;
     return dbg;
+}
+
+// Pin the MCU process in memory. "klipper.elf -r" would do this itself (mlockall together with
+// SCHED_FIFO), but it exits on EPERM as user "printer", so scripts/start_mcu.sh only sets the
+// priority with chrt. Without mlockall, pages of the idle MCU can be swapped out or reclaimed;
+// the page fault on the next step then stalls the MCU for milliseconds and it shuts down with
+// "Stepper too far in past". Needs a large enough memlock limit (docker-compose.yml: ulimits).
+// Every hook call runs inside the MCU's timer loop. A call that takes a millisecond delays the
+// next step; report such outliers so a stall can be told apart from one outside the hook.
+#define SLOW_CALL_MS 1.0
+static double hw_now_ms(void) {
+    struct timespec t;
+    clock_gettime(CLOCK_MONOTONIC, &t);
+    return (double)t.tv_sec * 1e3 + (double)t.tv_nsec / 1e6;
+}
+
+static void hw_report_slow(const char *what, const char *key, double start_ms) {
+    double ms = hw_now_ms() - start_ms;
+    if (ms >= SLOW_CALL_MS)
+        fprintf(stderr, "[fake_hw] slow %s %s: %.2f ms\n", what, key, ms);
+}
+
+__attribute__((constructor))
+static void hw_lock_memory(void) {
+    if (mlockall(MCL_CURRENT | MCL_FUTURE) == 0) {
+        fprintf(stderr, "[fake_hw] MCU memory locked (mlockall)\n");
+        return;
+    }
+    fprintf(stderr, "[fake_hw] mlockall failed: %s (raise the memlock ulimit, see docker-compose.yml)\n",
+            strerror(errno));
 }
 
 // Persistent connection to the Python server: one socket for all requests instead of one
@@ -330,7 +362,9 @@ ssize_t pread(int fd, void *buf, size_t count, off_t offset) {
     if (f && f->type == FD_ADC) {
         char key[32];
         snprintf(key, sizeof(key), "analog%d", f->channel);
+        double t0 = hw_now_ms();
         int value = read_value(key, 0); // Default 0 für 12-bit ADC
+        hw_report_slow("pread", key, t0);
 
         char tmp[32];
         int len = snprintf(tmp, sizeof(tmp), "%d\n", value);
@@ -401,7 +435,9 @@ int ioctl(int fd, unsigned long request, ...) {
         for (int i = 0; i < f->num_lines && i < GPIOHANDLES_MAX; i++) {
             char key[32];
             snprintf(key, sizeof(key), "chip%d_gpio%d", f->chip, f->line_offsets[i]);
+            double t0 = hw_now_ms();
             data->values[i] = read_value(key, 0) ? 1 : 0;
+            hw_report_slow("GET", key, t0);
             if (hw_debug()) fprintf(stderr, "[fake_hw] ioctl GET %s = %d\n", key, data->values[i]);
         }
         return 0;
@@ -414,7 +450,9 @@ int ioctl(int fd, unsigned long request, ...) {
             char key[32];
             snprintf(key, sizeof(key), "chip%d_gpio%d", f->chip, f->line_offsets[i]);
             if (hw_debug()) fprintf(stderr, "[fake_hw] ioctl SET %s = %d\n", key, data->values[i]);
+            double t0 = hw_now_ms();
             write_value(key, data->values[i]);
+            hw_report_slow("SET", key, t0);
         }
         return 0;
     }

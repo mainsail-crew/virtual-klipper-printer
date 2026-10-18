@@ -11,6 +11,8 @@ services:
       - dev_net
     cap_add:
       - SYS_NICE   # realtime priority for the Linux MCU (see scripts/start_mcu.sh)
+    ulimits:
+      memlock: -1  # the hook pins the Linux MCU in memory (see printer_simulator/hardware_bridge_hook.c)
     tmpfs:
       - /tmp:noexec
       - /home/printer/printer_data/comms:noexec
