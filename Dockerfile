@@ -31,8 +31,9 @@ RUN git clone --depth 1 ${KLIPPER_REPO} /home/printer/klipper \
 #### Build Firmware
 # Two firmwares, selected at runtime with MCU_TYPE: the Linux MCU (default) and the AVR
 # firmware for simulavr. olddefconfig fills in options newer Klipper versions added.
+
+## Linux MCU
 COPY config/linux.config /home/printer/klipper/.config
-COPY config/simulavr.config /home/printer/simulavr.config
 RUN cd /home/printer/klipper \
     && make olddefconfig \
     && make \
@@ -40,14 +41,17 @@ RUN cd /home/printer/klipper \
     && cp out/klipper.elf /home/printer/klipper_out \
     && cp out/klipper.dict /home/printer/klipper_out \
     && rm -f .config \
-    && make clean \
-    && cp /home/printer/simulavr.config .config \
+    && make clean
+
+## AVR MCU for simulavr
+COPY config/simulavr.config /home/printer/klipper/.config
+RUN cd /home/printer/klipper \
     && make olddefconfig \
     && make \
     && mkdir -p /home/printer/klipper_out_avr \
     && cp out/klipper.elf /home/printer/klipper_out_avr \
     && cp out/klipper.dict /home/printer/klipper_out_avr \
-    && rm -f .config /home/printer/simulavr.config \
+    && rm -f .config \
     && make clean
 
 #### Simulavr (MCU_TYPE=avr)
