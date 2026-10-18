@@ -51,10 +51,10 @@ docker-compose.yml up -d --build`
 ## Choosing the MCU (MCU_TYPE)
 The image contains two virtual MCUs. `MCU_TYPE` selects which one runs:
 
-| MCU_TYPE | What runs | Example configs |
+| MCU_TYPE | What runs | MCU config |
 |---|---|---|
-| `linux` (default) | Klipper Linux MCU, hardware simulated by `printer_simulator`, rendered webcam image | `example-configs/` (see [PINS.md](./PINS.md)) |
-| `avr` | Klipper AVR firmware (atmega644p) in simulavr, static webcam image | `example-configs-avr/` |
+| `linux` (default) | Klipper Linux MCU, hardware simulated by `printer_simulator`, rendered webcam image | `mcu_linux.cfg`, `addons-linux/` (see [PINS.md](./PINS.md)) |
+| `avr` | Klipper AVR firmware (atmega644p) in simulavr, static webcam image | `mcu_avr.cfg`, `addons-avr/` |
 
 Set it in `docker-compose.yml`, in a `docker-compose.override.yml` or in an `.env`
 file next to `docker-compose.yml`:
@@ -65,12 +65,21 @@ MCU_TYPE=avr
 
 Then recreate the container with `docker compose up -d`.
 
-The two MCUs use different pin names and serial ports, so a `printer.cfg` only
-works with the MCU it was written for. On first start the matching example
-configs are copied into `printer_data/config`. When you switch `MCU_TYPE` later,
-replace your config with the files from the other example folder (inside the
-container: `~/example-configs/` or `~/example-configs-avr/`). The container log
-shows a warning if `printer.cfg` does not match the selected MCU.
+The two MCUs use different pin names and serial ports. The example configs
+contain both: `mcu_<type>.cfg` holds the `[mcu]` section and the addon includes
+for that MCU, and `printer.cfg` includes one of them:
+
+```
+[include mcu_linux.cfg]
+#[include mcu_avr.cfg]
+```
+
+On first start the example configs are copied into `printer_data/config` with the
+include for the selected `MCU_TYPE` active. When you switch `MCU_TYPE` later,
+switch this include in `printer.cfg` as well. The container log shows a warning
+if `printer.cfg` does not include the config of the selected MCU. Configs from
+older versions do not have these files yet; copy them from `~/example-configs/`
+inside the container.
 
 The AVR simulation is slow and tends to shut down with "Timer too close" during
 longer moves on common CPUs (see #43); it is meant for special tests.

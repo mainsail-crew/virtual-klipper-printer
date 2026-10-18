@@ -141,7 +141,6 @@ COPY --from=builder --chown=printer:printer /home/printer/printer_simulator/ ./p
 
 # Copy example configs and dummy streamer images
 COPY --chown=printer:printer ./example-configs/ ./example-configs/
-COPY --chown=printer:printer ./example-configs-avr/ ./example-configs-avr/
 # copy one image as placeholder
 COPY --chown=printer:printer ./mjpg_streamer_images/image0.jpg ./mjpg_streamer_images/image0.jpg
 

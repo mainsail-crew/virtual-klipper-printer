@@ -2,8 +2,8 @@
 
 Documentation of pins and their usage in the virtual Klipper printer.
 
-This applies to `MCU_TYPE=linux` (the default). With `MCU_TYPE=avr` the configs in
-`example-configs-avr/` use the atmega644p pins of the simulavr setup instead.
+This applies to `MCU_TYPE=linux` (the default). With `MCU_TYPE=avr`, `mcu_avr.cfg` and
+`addons-avr/` use the atmega644p pins of the simulavr setup instead.
 
 ## Pin Naming
 
@@ -16,12 +16,12 @@ The hardware bridge sends GPIO keys to the simulator as:
 
 ## Active Default Pin Map
 
-This table reflects the default includes in [example-configs/printer.cfg](./example-configs/printer.cfg):
+This table reflects the default includes in [example-configs/mcu_linux.cfg](./example-configs/mcu_linux.cfg):
 
-- `addons/basic_cartesian_kinematics.cfg`
-- `addons/single_extruder.cfg`
-- `addons/heater_bed.cfg`
-- `addons/miscellaneous.cfg`
+- `addons-linux/basic_cartesian_kinematics.cfg`
+- `addons-linux/single_extruder.cfg`
+- `addons-linux/heater_bed.cfg`
+- `addons-linux/miscellaneous.cfg`
 
 | Klipper section | Config pin | Runtime key | Simulator component |
 |---|---|---|---|
