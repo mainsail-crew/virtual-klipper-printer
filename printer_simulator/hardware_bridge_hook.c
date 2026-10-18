@@ -20,6 +20,8 @@
 #include <sys/ioctl.h>
 #include <linux/gpio.h>
 
+#include <sys/mman.h>
+#include <time.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #define MAX_FAKE_FDS 128
@@ -104,6 +106,36 @@ static int hw_debug(void) {
     return dbg;
 }
 
+// Pin the MCU process in memory. "klipper.elf -r" would do this itself (mlockall together with
+// SCHED_FIFO), but it exits on EPERM as user "printer", so scripts/start_mcu.sh only sets the
+// priority with chrt. Without mlockall, pages of the idle MCU can be swapped out or reclaimed;
+// the page fault on the next step then stalls the MCU for milliseconds and it shuts down with
+// "Stepper too far in past". Needs a large enough memlock limit (docker-compose.yml: ulimits).
+// Every hook call runs inside the MCU's timer loop. A call that takes a millisecond delays the
+// next step; report such outliers so a stall can be told apart from one outside the hook.
+#define SLOW_CALL_MS 1.0
+static double hw_now_ms(void) {
+    struct timespec t;
+    clock_gettime(CLOCK_MONOTONIC, &t);
+    return (double)t.tv_sec * 1e3 + (double)t.tv_nsec / 1e6;
+}
+
+static void hw_report_slow(const char *what, const char *key, double start_ms) {
+    double ms = hw_now_ms() - start_ms;
+    if (ms >= SLOW_CALL_MS)
+        fprintf(stderr, "[fake_hw] slow %s %s: %.2f ms\n", what, key, ms);
+}
+
+__attribute__((constructor))
+static void hw_lock_memory(void) {
+    if (mlockall(MCL_CURRENT | MCL_FUTURE) == 0) {
+        fprintf(stderr, "[fake_hw] MCU memory locked (mlockall)\n");
+        return;
+    }
+    fprintf(stderr, "[fake_hw] mlockall failed: %s (raise the memlock ulimit, see docker-compose.yml)\n",
+            strerror(errno));
+}
+
 // Persistent connection to the Python server: one socket for all requests instead of one
 // connection (and one Python thread) per GPIO toggle, which was too slow for step pulses.
 static int hw_sock = -1;
@@ -128,14 +160,36 @@ static int hw_connect(void) {
     return hw_sock;
 }
 
-static int hw_send(const char *msg) {
-    for (int attempt = 0; attempt < 2; attempt++) {
-        int sock = hw_connect();
-        if (sock < 0) return -1;
-        if (send(sock, msg, strlen(msg), MSG_NOSIGNAL) == (ssize_t)strlen(msg)) return sock;
+// Outgoing messages are queued here and sent without ever blocking the MCU. A unix socket
+// accounts ~1 KB of kernel memory per small send, so its buffer holds only a few hundred
+// step messages; a short stall of the Python server then blocked send() and the MCU
+// missed its step times. The queue absorbs such stalls (1 MB = tens of thousands of steps).
+static char hw_wbuf[1 << 20];
+static size_t hw_wlen = 0;
+
+static void hw_flush(void) {
+    int sock = hw_connect();
+    if (sock < 0) return;
+    size_t off = 0;
+    while (off < hw_wlen) {
+        ssize_t n = send(sock, hw_wbuf + off, hw_wlen - off, MSG_NOSIGNAL | MSG_DONTWAIT);
+        if (n > 0) { off += (size_t)n; continue; }
+        if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)) break;
         hw_reset_connection();
+        return;
     }
-    return -1;
+    memmove(hw_wbuf, hw_wbuf + off, hw_wlen - off);
+    hw_wlen -= off;
+}
+
+static int hw_send(const char *msg) {
+    size_t len = strlen(msg);
+    if (hw_wlen + len > sizeof(hw_wbuf)) hw_flush();
+    if (hw_wlen + len > sizeof(hw_wbuf)) return -1;  // simulator far behind: drop the message
+    memcpy(hw_wbuf + hw_wlen, msg, len);
+    hw_wlen += len;
+    hw_flush();
+    return hw_sock;
 }
 
 // Input values (endstops, ADC, sensors) are cached in the hook. The first read of a key
@@ -167,12 +221,14 @@ static void hw_reset_connection(void) {
     if (hw_sock >= 0) close(hw_sock);
     hw_sock = -1;
     hw_rlen = 0;
+    hw_wlen = 0;
     hw_cache_len = 0;  // resubscribe after a reconnect
 }
 
 // Read whatever the server has pushed and update the cache. With wait_ms > 0 block up to that
 // long for the first data (only used for the initial subscription of a key).
 static void hw_poll(int wait_ms) {
+    if (hw_wlen) hw_flush();  // also drain queued messages when nothing new is written
     int sock = hw_connect();
     if (sock < 0) return;
     for (;;) {
@@ -210,8 +266,10 @@ static int read_value(const char *key, int fallback) {
     char request[64];
     snprintf(request, sizeof(request), "SUB %s\n", key);
     if (hw_send(request) < 0) return fallback;
-    for (int attempt = 0; attempt < 20 && (i = cache_find(key)) < 0; attempt++)
+    for (int attempt = 0; attempt < 20 && (i = cache_find(key)) < 0; attempt++) {
+        hw_flush();
         hw_poll(SOCKET_TIMEOUT_MS);
+    }
     return i >= 0 ? hw_cache[i].value : fallback;
 }
 
@@ -304,7 +362,9 @@ ssize_t pread(int fd, void *buf, size_t count, off_t offset) {
     if (f && f->type == FD_ADC) {
         char key[32];
         snprintf(key, sizeof(key), "analog%d", f->channel);
+        double t0 = hw_now_ms();
         int value = read_value(key, 0); // Default 0 für 12-bit ADC
+        hw_report_slow("pread", key, t0);
 
         char tmp[32];
         int len = snprintf(tmp, sizeof(tmp), "%d\n", value);
@@ -375,7 +435,9 @@ int ioctl(int fd, unsigned long request, ...) {
         for (int i = 0; i < f->num_lines && i < GPIOHANDLES_MAX; i++) {
             char key[32];
             snprintf(key, sizeof(key), "chip%d_gpio%d", f->chip, f->line_offsets[i]);
+            double t0 = hw_now_ms();
             data->values[i] = read_value(key, 0) ? 1 : 0;
+            hw_report_slow("GET", key, t0);
             if (hw_debug()) fprintf(stderr, "[fake_hw] ioctl GET %s = %d\n", key, data->values[i]);
         }
         return 0;
@@ -388,7 +450,9 @@ int ioctl(int fd, unsigned long request, ...) {
             char key[32];
             snprintf(key, sizeof(key), "chip%d_gpio%d", f->chip, f->line_offsets[i]);
             if (hw_debug()) fprintf(stderr, "[fake_hw] ioctl SET %s = %d\n", key, data->values[i]);
+            double t0 = hw_now_ms();
             write_value(key, data->values[i]);
+            hw_report_slow("SET", key, t0);
         }
         return 0;
     }
