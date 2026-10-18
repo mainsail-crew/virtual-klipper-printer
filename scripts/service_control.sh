@@ -84,17 +84,21 @@ list-units)
   ;;
 
 start | stop | restart)
+  # Moonraker waits only 2 s for "systemctl start/stop/restart" and reports an error after
+  # that, while restarting the Klipper programs takes longer. Hand the action to supervisor
+  # in the background (detached, output to the supervisord log) and return at once.
   for UNIT in "${UNITS[@]}"; do
     if [ "$UNIT" = "klipper" ]; then
       # the MCU programs depend on MCU_TYPE, see /bin/start
       if grep -q "^\[program:simulavr\]" /etc/supervisor/conf.d/mcu.conf 2>/dev/null; then
-        sudo /usr/bin/supervisorctl "$COMMAND" simulavr klipper_klippy
+        PROGRAMS=(simulavr klipper_klippy)
       else
-        sudo /usr/bin/supervisorctl "$COMMAND" printer_simulator webcam_renderer klipper_mcu klipper_klippy
+        PROGRAMS=(printer_simulator webcam_renderer klipper_mcu klipper_klippy)
       fi
     else
-      sudo /usr/bin/supervisorctl "$COMMAND" "$UNIT"
+      PROGRAMS=("$UNIT")
     fi
+    setsid sudo /usr/bin/supervisorctl "$COMMAND" "${PROGRAMS[@]}" </dev/null >/dev/null 2>&1 &
   done
   ;;
 
