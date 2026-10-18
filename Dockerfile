@@ -34,13 +34,20 @@ RUN git clone --depth 1 ${KLIPPER_REPO} /home/printer/klipper \
 
 ## Linux MCU
 COPY config/linux.config /home/printer/klipper/.config
+# The simulator runs on ordinary hosts (laptops, containers, VMs) where the MCU process can be
+# held up for tens of milliseconds. The stock Linux MCU shuts down with "Stepper too far in
+# past" after a 1 ms delay; the patch widens the timing checks, see config/klipper-stall-tolerance.patch.
+# It is only applied for the Linux MCU and reverted before the AVR build.
+COPY config/klipper-stall-tolerance.patch /home/printer/klipper/
 RUN cd /home/printer/klipper \
+    && git apply klipper-stall-tolerance.patch \
     && make olddefconfig \
     && make \
     && mkdir -p /home/printer/klipper_out \
     && cp out/klipper.elf /home/printer/klipper_out \
     && cp out/klipper.dict /home/printer/klipper_out \
-    && rm -f .config \
+    && git apply -R klipper-stall-tolerance.patch \
+    && rm -f .config klipper-stall-tolerance.patch \
     && make clean
 
 ## AVR MCU for simulavr
