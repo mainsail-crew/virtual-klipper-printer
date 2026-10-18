@@ -48,9 +48,8 @@ COPY config/simulavr.config /home/printer/klipper/.config
 RUN cd /home/printer/klipper \
     && make olddefconfig \
     && make \
-    && mkdir -p /home/printer/klipper_out_avr \
-    && cp out/klipper.elf /home/printer/klipper_out_avr \
-    && cp out/klipper.dict /home/printer/klipper_out_avr \
+    && cp out/klipper.elf /home/printer/klipper_out/klipper_avr.elf \
+    && cp out/klipper.dict /home/printer/klipper_out/klipper_avr.dict \
     && rm -f .config \
     && make clean
 
@@ -134,7 +133,6 @@ COPY --from=builder --chown=printer:printer /home/printer/klipper/ ./klipper/
 COPY --from=builder --chown=printer:printer /home/printer/moonraker ./moonraker
 COPY --from=builder --chown=printer:printer /home/printer/moonraker-timelapse ./moonraker-timelapse
 COPY --from=builder --chown=printer:printer /home/printer/klipper_out/ ./klipper/out/
-COPY --from=builder --chown=printer:printer /home/printer/klipper_out_avr/ ./klipper/out_avr/
 COPY --from=builder --chown=printer:printer /home/printer/simulavr ./simulavr
 COPY --from=builder --chown=printer:printer /home/printer/mjpg-streamer/mjpg-streamer-experimental ./mjpg-streamer
 COPY --from=builder --chown=printer:printer /home/printer/printer_simulator/ ./printer_simulator/
