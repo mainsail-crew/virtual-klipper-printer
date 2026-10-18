@@ -50,7 +50,10 @@ UNITS=($@)
 case "$COMMAND" in
 show)
   for UNIT in "${UNITS[@]}"; do
-    UNIT_STATE=$(sudo /usr/bin/supervisorctl status "$UNIT" | awk '{print tolower($2)}')
+    PROGRAM="$UNIT"
+    # "klipper" is the whole Klipper stack (see list-units), its state is klippy's
+    [ "$UNIT" = "klipper" ] && PROGRAM="klipper_klippy"
+    UNIT_STATE=$(sudo /usr/bin/supervisorctl status "$PROGRAM" | awk '{print tolower($2)}')
 
     for PROPERTY in "${PROPERTIES[@]}"; do
       case "$PROPERTY" in
@@ -73,7 +76,11 @@ show)
   ;;
 
 list-units)
-  sudo /usr/bin/supervisorctl status | awk '{print $1".service\tloaded\t"(tolower($2)=="running"?"active\trunning":"inactive\tdead")"\t"$1" service"}'
+  STATUS="$(sudo /usr/bin/supervisorctl status)"
+  echo "$STATUS" | awk '{print $1".service\tloaded\t"(tolower($2)=="running"?"active\trunning":"inactive\tdead")"\t"$1" service"}'
+  # Moonraker and Mainsail restart Klipper as service "klipper"; there is no program of that
+  # name, start/stop/restart below map it to all Klipper programs of the active MCU_TYPE
+  echo "$STATUS" | awk '$1=="klipper_klippy" {print "klipper.service\tloaded\t"(tolower($2)=="running"?"active\trunning":"inactive\tdead")"\tklipper service"}'
   ;;
 
 start | stop | restart)
